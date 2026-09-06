@@ -1,0 +1,1300 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#2f5d8a">
+<meta name="description" content="フィギュアスケート観戦・実況アプリ SpoTLight - 画面を見ずに爆速でX実況投稿を作成できるPWA">
+<title>SpoTLight - フィギュアスケート観戦・実況アプリ</title>
+<link rel="manifest" href="./manifest.json">
+<link rel="icon" href="./icon-192.png">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<style>
+  :root{
+    --color-bg: #e9eff5;
+    --color-surface: #ffffff;
+    --color-surface-alt: #f4f8fb;
+    --color-ice-blue: #4d7fb5;
+    --color-ice-blue-dark: #35608c;
+    --color-slate: #2f5d8a;
+    --color-slate-dark: #1f3f5c;
+    --color-ice-white: #f7fafc;
+    --color-border: #d3dfe9;
+    --color-border-strong: #aec2d4;
+    --color-text: #1c2b38;
+    --color-text-muted: #5c6c7a;
+    --color-warning: #9c6a12;
+    --color-warning-bg: #fbecd4;
+    --color-warning-strong: #7a5410;
+    --color-positive: #2c6e6b;
+    --color-positive-bg: #e2f1f0;
+    --color-neutral-badge: #5c6c7a;
+    --radius-s: 8px;
+    --radius-m: 14px;
+    --radius-l: 20px;
+    --tap-min: 48px;
+    --shadow-card: 0 1px 3px rgba(31,63,92,0.10), 0 1px 2px rgba(31,63,92,0.06);
+  }
+  *{ box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", "Segoe UI", Roboto, sans-serif;
+    line-height: 1.5;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+  button{ font-family: inherit; }
+  button:focus-visible, select:focus-visible, textarea:focus-visible, input:focus-visible, a:focus-visible{
+    outline: 3px solid var(--color-slate-dark);
+    outline-offset: 2px;
+  }
+  .app-shell{ max-width: 1400px; margin: 0 auto; padding-bottom: 12px; }
+
+  /* ---------- HEADER ---------- */
+  header.app-header{
+    background: linear-gradient(180deg, var(--color-slate-dark), var(--color-slate));
+    color: var(--color-ice-white);
+    padding: 12px 14px 10px;
+    position: sticky; top:0; z-index: 30;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  }
+  .header-top{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .app-title{ font-size: 1.35rem; font-weight: 800; letter-spacing: 0.02em; margin:0; }
+  .app-subtitle{ font-size: 0.72rem; color: #cfe0ee; margin: 2px 0 0; font-weight:500; }
+  .settings-btn{
+    background: rgba(255,255,255,0.14); border: 1px solid rgba(255,255,255,0.35);
+    color: var(--color-ice-white); border-radius: var(--radius-s);
+    min-width: var(--tap-min); min-height: var(--tap-min);
+    font-size: 1.3rem; cursor:pointer; flex-shrink:0;
+  }
+  .discipline-tabs{ display:flex; gap:6px; margin-top:10px; }
+  .discipline-tabs button{
+    flex:1; padding:10px 4px; border-radius: var(--radius-s); border:1px solid rgba(255,255,255,0.3);
+    background: rgba(255,255,255,0.08); color:#e7f0f7; font-weight:700; font-size:0.85rem;
+    cursor:pointer; min-height: var(--tap-min);
+  }
+  .discipline-tabs button[aria-pressed="true"]{
+    background: var(--color-ice-white); color: var(--color-slate-dark); border-color: var(--color-ice-white);
+  }
+
+  /* ---------- LAYOUT ---------- */
+  main.layout{
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 12px;
+  }
+  .panel{
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-m);
+    box-shadow: var(--shadow-card);
+    padding: 12px;
+  }
+  .panel h2{ font-size:0.82rem; margin:0 0 8px; color: var(--color-slate-dark); font-weight:800; }
+  .panel h3{ font-size:0.75rem; margin:10px 0 6px; color: var(--color-text-muted); font-weight:700; }
+
+  /* Event tag row */
+  .event-tag-row{ display:flex; flex-wrap:wrap; gap:6px; font-size:0.72rem; color:var(--color-text-muted); margin-bottom:8px; }
+  .event-tag-row .chip{ background: var(--color-surface-alt); border:1px solid var(--color-border); border-radius: 999px; padding: 4px 10px; }
+
+  /* Player card */
+  .player-nav{ display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+  .player-nav button.nav-arrow{
+    min-width: var(--tap-min); min-height: var(--tap-min); border-radius: var(--radius-s);
+    border:1px solid var(--color-border-strong); background: var(--color-surface-alt); font-size:1.2rem; cursor:pointer;
+  }
+  .player-nav select{
+    flex:1; min-height: var(--tap-min); border-radius: var(--radius-s); border:1px solid var(--color-border-strong);
+    padding: 0 8px; font-size:0.9rem; background:#fff;
+  }
+  .field-row{ display:flex; flex-direction:column; gap:4px; margin-bottom:8px; }
+  .field-row label{ font-size:0.72rem; color:var(--color-text-muted); font-weight:700; }
+  .field-row input[type="text"]{
+    border:1px solid var(--color-border-strong); border-radius: var(--radius-s); padding:9px 10px; font-size:0.9rem; min-height:var(--tap-min);
+  }
+  .toggle-group{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px; }
+  .toggle-group button{
+    padding:8px 12px; border-radius: 999px; border:1px solid var(--color-border-strong);
+    background:#fff; color:var(--color-text); font-size:0.78rem; font-weight:700; cursor:pointer; min-height:40px;
+  }
+  .toggle-group button[aria-pressed="true"]{
+    background: var(--color-slate); border-color: var(--color-slate); color:#fff;
+  }
+  .recall-btn{
+    width:100%; min-height: var(--tap-min); border-radius: var(--radius-s); border:1px dashed var(--color-ice-blue-dark);
+    background: var(--color-surface-alt); color: var(--color-ice-blue-dark); font-weight:800; font-size:0.85rem; cursor:pointer;
+  }
+  .insert-name-btn{
+    width:100%; margin-top:6px; min-height:42px; border-radius: var(--radius-s); border:1px solid var(--color-border-strong);
+    background:#fff; color:var(--color-slate-dark); font-weight:700; font-size:0.8rem; cursor:pointer;
+  }
+
+  /* Score section */
+  .score-inputs{ display:flex; gap:8px; margin-bottom:8px; }
+  .score-inputs .field-row{ flex:1; margin-bottom:0; }
+  .score-inputs input[type="number"]{
+    width:100%; border:1px solid var(--color-border-strong); border-radius: var(--radius-s);
+    padding:9px 10px; font-size:0.95rem; min-height:var(--tap-min);
+  }
+  .total-display{
+    background: var(--color-surface-alt); border:1px solid var(--color-border); border-radius: var(--radius-s);
+    padding:10px; font-weight:800; font-size:1rem; text-align:center; color:var(--color-slate-dark); margin-bottom:8px;
+  }
+  .pattern-select{ width:100%; min-height:var(--tap-min); border-radius:var(--radius-s); border:1px solid var(--color-border-strong); padding:0 8px; margin-bottom:8px; background:#fff; }
+  .switch-row{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:6px; }
+  .switch-row span{ font-size:0.8rem; font-weight:700; }
+  .switch{ position:relative; width:50px; height:30px; flex-shrink:0; }
+  .switch input{ opacity:0; width:100%; height:100%; margin:0; position:absolute; cursor:pointer; z-index:2; }
+  .switch .track{ position:absolute; inset:0; background:#c7d3dd; border-radius:999px; transition:.15s; }
+  .switch .thumb{ position:absolute; top:3px; left:3px; width:24px; height:24px; background:#fff; border-radius:50%; transition:.15s; box-shadow:0 1px 2px rgba(0,0,0,.3); }
+  .switch input:checked + .track{ background: var(--color-slate); }
+  .switch input:checked ~ .thumb{ transform: translateX(20px); }
+
+  /* Preview */
+  .preview-textarea{
+    width:100%; min-height:96px; border:1px solid var(--color-border-strong); border-radius: var(--radius-s);
+    padding:10px; font-size:0.95rem; resize:vertical; font-family:inherit; margin-bottom:6px;
+  }
+  .counter-row{ display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+  .counter{ font-size:0.78rem; font-weight:800; color: var(--color-text-muted); }
+  .counter.warn{ color: var(--color-warning-strong); background: var(--color-warning-bg); padding:2px 8px; border-radius:999px; }
+  .append-preview{ font-size:0.72rem; color: var(--color-text-muted); background: var(--color-surface-alt); border:1px dashed var(--color-border-strong); border-radius: var(--radius-s); padding:6px 8px; margin-bottom:8px; white-space:pre-wrap; }
+  .quick-phrases{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px; }
+  .quick-phrases button{
+    padding:9px 12px; border-radius: var(--radius-s); border:1px solid var(--color-border-strong);
+    background:#fff; font-size:0.78rem; font-weight:700; cursor:pointer; min-height:40px;
+  }
+  .action-row{ display:flex; gap:8px; }
+  .action-row button{
+    flex:1; min-height: var(--tap-min); border-radius: var(--radius-s); border:none; font-weight:800; font-size:0.85rem; cursor:pointer;
+  }
+  .btn-copy{ background: var(--color-surface-alt); color: var(--color-slate-dark); border:1px solid var(--color-border-strong) !important; }
+  .btn-post{ background: var(--color-slate); color:#fff; }
+
+  /* Touch button area */
+  .touch-groups{ display:flex; flex-direction:column; gap:10px; }
+  .touch-group-title{ font-size:0.75rem; font-weight:800; color:var(--color-text-muted); margin: 2px 0 2px; }
+  .touch-grid{ display:grid; grid-template-columns: repeat(auto-fill, minmax(66px,1fr)); gap:8px; }
+  .touch-grid button{
+    min-height: 58px; border-radius: var(--radius-s); border:1px solid var(--color-border-strong);
+    background: var(--color-ice-white); color: var(--color-slate-dark); font-weight:800; font-size:0.95rem; cursor:pointer;
+    box-shadow: 0 1px 2px rgba(31,63,92,0.08);
+  }
+  .touch-grid button:active{ background: var(--color-slate); color:#fff; transform: scale(0.97); }
+  .combo-row{ display:flex; flex-wrap:wrap; gap:8px; margin-top:2px; }
+  .combo-row button{
+    min-height:54px; padding:0 14px; border-radius: var(--radius-s); border:1px solid var(--color-ice-blue-dark);
+    background:#eaf1f8; color:var(--color-ice-blue-dark); font-weight:800; font-size:0.9rem; cursor:pointer;
+  }
+  .status-row{ display:flex; flex-wrap:wrap; gap:8px; margin-top:2px; }
+  .status-row button{
+    min-height:54px; padding:0 12px; border-radius: var(--radius-s); border:1px solid var(--color-warning);
+    background: var(--color-warning-bg); color: var(--color-warning-strong); font-weight:800; font-size:0.85rem; cursor:pointer;
+  }
+  .status-row button.positive{ border-color: var(--color-positive); background: var(--color-positive-bg); color: var(--color-positive); }
+  .status-row button .badge{ display:block; font-size:0.6rem; font-weight:700; opacity:0.8; }
+
+  .undo-wrap{ display:flex; justify-content:flex-end; margin-top:10px; }
+  .undo-btn{
+    min-width:64px; min-height:64px; border-radius: 50%; border:2px solid var(--color-slate-dark);
+    background:#fff; color:var(--color-slate-dark); font-size:1.5rem; cursor:pointer; box-shadow: var(--shadow-card);
+  }
+  .undo-btn:active{ background: var(--color-slate-dark); color:#fff; }
+
+  /* Footer */
+  footer.app-footer p{ margin:4px 0; }
+  footer.app-footer a{ color:#4a90e2; text-decoration:none; }
+
+  /* Toast */
+  .toast{
+    position:fixed; left:50%; bottom:20px; transform: translateX(-50%);
+    background: var(--color-slate-dark); color:#fff; padding:10px 18px; border-radius:999px;
+    font-size:0.85rem; font-weight:700; z-index: 200; box-shadow:0 3px 10px rgba(0,0,0,0.25);
+    opacity:0; pointer-events:none; transition: opacity .2s ease;
+  }
+  .toast.show{ opacity:1; }
+
+  /* Modal */
+  .modal-overlay{
+    position:fixed; inset:0; background:rgba(20,35,50,0.55); z-index:100;
+    display:none; align-items:flex-start; justify-content:center; padding: 16px; overflow-y:auto;
+  }
+  .modal-overlay.open{ display:flex; }
+  .modal-box{
+    background:#fff; border-radius: var(--radius-l); max-width:560px; width:100%; margin-top:20px;
+    padding:16px; max-height: calc(100vh - 40px); overflow-y:auto;
+  }
+  .modal-header{ display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; position:sticky; top:0; background:#fff; padding-bottom:6px; }
+  .modal-header h2{ margin:0; font-size:1.05rem; color:var(--color-slate-dark); }
+  .modal-close{
+    min-width:40px; min-height:40px; border-radius:var(--radius-s); border:1px solid var(--color-border-strong);
+    background:var(--color-surface-alt); font-size:1.1rem; cursor:pointer;
+  }
+  .settings-section{ border-top:1px solid var(--color-border); padding-top:10px; margin-top:10px; }
+  .settings-section:first-of-type{ border-top:none; margin-top:0; padding-top:0; }
+  .player-list-item{
+    display:flex; flex-direction:column; gap:6px; border:1px solid var(--color-border); border-radius:var(--radius-s);
+    padding:8px; margin-bottom:8px; background: var(--color-surface-alt);
+  }
+  .player-list-item .row{ display:flex; gap:6px; }
+  .player-list-item input{ flex:1; min-height:40px; border:1px solid var(--color-border-strong); border-radius:6px; padding:0 8px; font-size:0.85rem; }
+  .icon-btn{
+    min-width:40px; min-height:40px; border-radius:6px; border:1px solid var(--color-border-strong);
+    background:#fff; font-size:0.95rem; cursor:pointer;
+  }
+  .icon-btn.danger{ color:#8a3a12; border-color:#c99a6d; background:#fbf1e6; }
+  .add-btn{
+    width:100%; min-height:44px; border-radius:var(--radius-s); border:1px dashed var(--color-ice-blue-dark);
+    background:#eaf1f8; color:var(--color-ice-blue-dark); font-weight:800; cursor:pointer; margin-top:4px;
+  }
+  textarea.bulk-io{ width:100%; min-height:90px; border:1px solid var(--color-border-strong); border-radius:var(--radius-s); padding:8px; font-size:0.82rem; font-family:monospace; }
+  .modal-btn-row{ display:flex; gap:8px; margin-top:8px; }
+  .modal-btn-row button{ flex:1; min-height:44px; border-radius:var(--radius-s); border:1px solid var(--color-border-strong); background:#fff; font-weight:700; cursor:pointer; }
+  .modal-btn-row button.primary{ background: var(--color-slate); color:#fff; border:none; }
+  .note-text{ font-size:0.7rem; color: var(--color-text-muted); margin-top:4px; }
+  .quick-phrase-input{ display:flex; gap:6px; margin-bottom:6px; align-items:center; }
+  .quick-phrase-input span{ font-size:0.75rem; font-weight:800; color:var(--color-text-muted); width:18px; }
+  .quick-phrase-input input{ flex:1; min-height:40px; border:1px solid var(--color-border-strong); border-radius:6px; padding:0 8px; font-size:0.85rem; }
+  .custom-btn-item{ display:flex; gap:6px; align-items:center; margin-bottom:6px; }
+  .custom-btn-item select{ min-height:40px; border:1px solid var(--color-border-strong); border-radius:6px; }
+
+  /* ---------- RESPONSIVE: ARCADE (tablet/landscape) ---------- */
+  @media (min-width: 760px){
+    main.layout{
+      grid-template-columns: minmax(300px, 420px) 1fr;
+      align-items:start;
+    }
+    .col-left{ display:flex; flex-direction:column; gap:12px; }
+    .col-right{ display:flex; flex-direction:column; gap:12px; position:sticky; top:150px; }
+  }
+  @media (max-width: 759px){
+    .col-left, .col-right{ display:contents; }
+  }
+</style>
+</head>
+<body>
+<div class="app-shell">
+
+  <header class="app-header">
+    <div class="header-top">
+      <div>
+        <p class="app-title">SpoTLight</p>
+        <p class="app-subtitle">フィギュアスケート観戦・実況アプリ</p>
+      </div>
+      <button class="settings-btn" id="btnOpenSettings" aria-label="設定を開く">⚙️</button>
+    </div>
+    <div class="discipline-tabs" id="disciplineTabs" role="tablist">
+      <button data-discipline="single" aria-pressed="true">シングル</button>
+      <button data-discipline="pair" aria-pressed="false">ペア</button>
+      <button data-discipline="dance" aria-pressed="false">アイスダンス</button>
+      <button data-discipline="synchro" aria-pressed="false">シンクロ</button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <div class="col-left">
+
+      <section class="panel" id="panelEvent">
+        <h2>大会情報</h2>
+        <div class="event-tag-row" id="eventTagRow"></div>
+      </section>
+
+      <section class="panel" id="panelPlayer">
+        <h2>選手選択</h2>
+        <div class="player-nav">
+          <button class="nav-arrow" id="btnPrevPlayer" aria-label="前の選手">◀</button>
+          <select id="selectPlayer"></select>
+          <button class="nav-arrow" id="btnNextPlayer" aria-label="次の選手">▶</button>
+        </div>
+        <div class="field-row">
+          <label for="inputPlayerName">選手名</label>
+          <input type="text" id="inputPlayerName" placeholder="例: 山田 花子">
+        </div>
+        <div class="field-row">
+          <label for="inputPlayerSong">曲名 / プログラム</label>
+          <input type="text" id="inputPlayerSong" placeholder="例: 白鳥の湖">
+        </div>
+        <div class="field-row">
+          <label for="inputPlayerElements">予定構成</label>
+          <input type="text" id="inputPlayerElements" placeholder="例: 4S / 4T+3T / 3A">
+        </div>
+
+        <h3>敬称</h3>
+        <div class="toggle-group" id="honorificToggle">
+          <button data-value="san" aria-pressed="true">さん</button>
+          <button data-value="senshu" aria-pressed="false">選手</button>
+          <button data-value="none" aria-pressed="false">呼び捨て</button>
+        </div>
+
+        <h3>区切り文字</h3>
+        <div class="toggle-group" id="separatorToggle">
+          <button data-value="touten" aria-pressed="true">読点「、」</button>
+          <button data-value="slash" aria-pressed="false">スラッシュ「/」</button>
+          <button data-value="space" aria-pressed="false">半角スペース</button>
+          <button data-value="newline" aria-pressed="false">改行</button>
+        </div>
+
+        <button class="recall-btn" id="btnRecallElements">📋 予定構成を呼出 / リセット</button>
+        <button class="insert-name-btn" id="btnInsertName">🖊 選手名を本文に挿入</button>
+      </section>
+
+      <section class="panel" id="panelScore">
+        <h2>得点入力（Kiss &amp; Cry）</h2>
+        <div class="score-inputs">
+          <div class="field-row">
+            <label for="inputSP">SP得点</label>
+            <input type="number" step="0.01" id="inputSP" placeholder="例: 75.30">
+          </div>
+          <div class="field-row">
+            <label for="inputFS">FS得点</label>
+            <input type="number" step="0.01" id="inputFS" placeholder="例: 145.20">
+          </div>
+        </div>
+        <div class="total-display" id="totalDisplay">Total: --</div>
+        <h3>得点表記パターン</h3>
+        <select class="pattern-select" id="scorePatternSelect">
+          <option value="1">FS: 145.20 / Total: 220.50 (SP: 75.30 + FS: 145.20)</option>
+          <option value="2">FS: 145.20 ( Total: 220.50 )</option>
+          <option value="3">Total 220.50 (+145.20)</option>
+        </select>
+        <div class="switch-row">
+          <span>得点をツイートに含める</span>
+          <label class="switch">
+            <input type="checkbox" id="toggleIncludeScore" checked>
+            <span class="track"></span><span class="thumb"></span>
+          </label>
+        </div>
+      </section>
+
+      <section class="panel" id="panelPreview">
+        <h2>実況プレビュー</h2>
+        <textarea class="preview-textarea" id="previewTextarea" placeholder="ここに実況が表示されます。直接編集も可能です。"></textarea>
+        <div class="counter-row">
+          <span class="counter" id="charCounter">0 / 140文字</span>
+        </div>
+        <div class="append-preview" id="appendPreview">末尾に自動追加される内容: なし</div>
+        <div class="quick-phrases" id="quickPhraseButtons"></div>
+        <div class="action-row">
+          <button class="btn-copy" id="btnCopy">📋 コピー</button>
+          <button class="btn-post" id="btnPostX">𝕏 Xで投稿</button>
+        </div>
+      </section>
+
+    </div>
+
+    <div class="col-right">
+      <section class="panel" id="panelTouch">
+        <h2>技・評価ボタン</h2>
+        <div class="touch-groups" id="touchGroups"></div>
+
+        <h3>コンボ / ショートカット</h3>
+        <div class="combo-row" id="comboRow">
+          <button data-insert="+" data-glue-before="1" data-glue-after="1">＋（接続）</button>
+          <button data-insert="+2A" data-glue-before="1" data-glue-after="0">+2A</button>
+          <button data-insert="+1Eu+" data-glue-before="1" data-glue-after="1">+1Eu+</button>
+        </div>
+
+        <h3>ステータス・評価</h3>
+        <div class="status-row" id="statusRow">
+          <button data-insert="fall" data-glue-before="1" data-glue-after="0">fall<span class="badge">転倒</span></button>
+          <button data-insert="q" data-glue-before="1" data-glue-after="0">q<span class="badge">回転不足懸念</span></button>
+          <button data-insert="&lt;" data-glue-before="1" data-glue-after="0">&lt;<span class="badge">回転不足</span></button>
+          <button data-insert="rep" data-glue-before="1" data-glue-after="0">rep<span class="badge">リピート</span></button>
+          <button data-insert="v" data-glue-before="1" data-glue-after="0">v<span class="badge">ノーカン</span></button>
+          <button class="positive" data-insert="美" data-glue-before="1" data-glue-after="0">美<span class="badge">最高加点</span></button>
+          <button class="positive" data-insert="神" data-glue-before="1" data-glue-after="0">神<span class="badge">神演技</span></button>
+        </div>
+        <div id="customButtonsRow"></div>
+
+        <div class="undo-wrap">
+          <button class="undo-btn" id="btnUndo" aria-label="1つ戻る">↩️</button>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer style="text-align: center; padding: 20px 10px; font-size: 0.8rem; color: #666; border-top: 1px solid #e0e0e0; margin-top: 30px;">
+    <p>免責事項: 本アプリの使用により生じた損害やトラブルについて、制作者は一切の責任を負いません。</p>
+    <p>連絡先: <a href="https://x.com/your_account" target="_blank" rel="noopener noreferrer" style="color: #4a90e2; text-decoration: none;">@your_account</a></p>
+  </footer>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- ===================== SETTINGS MODAL ===================== -->
+<div class="modal-overlay" id="settingsOverlay">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h2>設定</h2>
+      <button class="modal-close" id="btnCloseSettings" aria-label="閉じる">✕</button>
+    </div>
+
+    <div class="settings-section">
+      <h3>大会基本情報</h3>
+      <div class="field-row"><label for="settingEventName">大会名</label><input type="text" id="settingEventName" placeholder="例: 全日本選手権"></div>
+      <div class="field-row"><label for="settingEventDate">開催年・日程</label><input type="text" id="settingEventDate" placeholder="例: 2026年 Day 2"></div>
+      <div class="field-row"><label for="settingVenue">会場名</label><input type="text" id="settingVenue" placeholder="例: 代々木第一体育館"></div>
+      <div class="field-row"><label for="settingSeat">座席（任意）</label><input type="text" id="settingSeat" placeholder="例: アリーナS 2列 15番"></div>
+      <div class="switch-row">
+        <span>ハッシュタグ自動付与</span>
+        <label class="switch">
+          <input type="checkbox" id="toggleHashtag" checked>
+          <span class="track"></span><span class="thumb"></span>
+        </label>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <h3>選手リスト管理</h3>
+      <div id="playerListManage"></div>
+      <button class="add-btn" id="btnAddPlayer">＋ 選手を追加</button>
+      <h3 style="margin-top:14px;">一括インポート / エクスポート</h3>
+      <p class="note-text">1行1名で「選手名,曲名,予定構成」の形式（曲名・予定構成は省略可）</p>
+      <textarea class="bulk-io" id="bulkPlayerText"></textarea>
+      <div class="modal-btn-row">
+        <button id="btnBulkExport">書き出す</button>
+        <button class="primary" id="btnBulkImport">取り込む</button>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <h3>定型文5選の編集</h3>
+      <div id="quickPhraseEdit"></div>
+    </div>
+
+    <div class="settings-section">
+      <h3>カスタムボタン管理</h3>
+      <div id="customButtonManage"></div>
+      <div class="row" style="display:flex; gap:6px; margin-top:6px;">
+        <input type="text" id="newCustomLabel" placeholder="ボタン表示名" style="flex:1; min-height:40px; border:1px solid var(--color-border-strong); border-radius:6px; padding:0 8px;">
+        <input type="text" id="newCustomInsert" placeholder="挿入テキスト" style="flex:1; min-height:40px; border:1px solid var(--color-border-strong); border-radius:6px; padding:0 8px;">
+      </div>
+      <select id="newCustomGlue" style="width:100%; min-height:40px; margin-top:6px; border:1px solid var(--color-border-strong); border-radius:6px;">
+        <option value="normal">通常（区切り文字あり）</option>
+        <option value="glue">直接接続（区切りなし）</option>
+        <option value="glueOpen">末尾に＋（次の要素も直結）</option>
+      </select>
+      <button class="add-btn" id="btnAddCustomButton">＋ カスタムボタンを追加</button>
+    </div>
+
+    <div class="settings-section">
+      <h3>データバックアップ＆復元</h3>
+      <textarea class="bulk-io" id="backupText" placeholder="ここにバックアップJSONが表示されます"></textarea>
+      <div class="modal-btn-row">
+        <button id="btnBackupExport">書き出す</button>
+        <button class="primary" id="btnBackupImport">復元する</button>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <h3>バイブレーション</h3>
+      <div class="switch-row">
+        <span>ボタン操作時に振動</span>
+        <label class="switch">
+          <input type="checkbox" id="toggleVibration" checked>
+          <span class="track"></span><span class="thumb"></span>
+        </label>
+      </div>
+      <p class="note-text">※端末やブラウザの設定、マナーモード状態によっては振動しない場合があります。</p>
+    </div>
+
+  </div>
+</div>
+
+<script>
+(function(){
+try{
+
+  /* ============================================================
+     定数・デフォルトデータ
+  ============================================================ */
+  var STORAGE_KEY = 'spotlight_state_v1';
+  var HONORIFIC_MAP = { san: 'さん', senshu: '選手', none: '' };
+  var SEPARATOR_MAP = { touten: '、', slash: ' / ', space: ' ', newline: '\n' };
+  var DISCIPLINE_LABELS = { single:'シングル', pair:'ペア', dance:'アイスダンス', synchro:'シンクロ' };
+
+  var DISCIPLINE_CONFIG = {
+    single: { groups: [
+      { label:'ジャンプ', buttons:['4A','4Lz','4F','4Lo','4S','4T','3A','3Lz','3F','3Lo','3S','3T','2A','2T'] },
+      { label:'スピン', buttons:['FCSp','CCoSp','CSp','LSp','USp','SSp'] },
+      { label:'ステップ', buttons:['StSq','ChSq'] }
+    ]},
+    pair: { groups: [
+      { label:'ジャンプ（SBS）', buttons:['3A','3Lz','3F','3Lo','3S','3T','2A','2T'] },
+      { label:'ペア要素', buttons:['TwLift','StaLift','DeathSpiral','ThrowJump','PairSpin'] },
+      { label:'ステップ', buttons:['StSq','ChSq'] }
+    ]},
+    dance: { groups: [
+      { label:'ツイズル / パターン', buttons:['Twizzle','PSt'] },
+      { label:'リフト', buttons:['StaLift','RotLift','CuLi'] },
+      { label:'スピン / ステップ', buttons:['Spin','ChSt'] }
+    ]},
+    synchro: { groups: [
+      { label:'隊形', buttons:['Block','Circle','Line','Wheel','Intersection'] },
+      { label:'要素', buttons:['PairElement','SynchroSpin','MovesField'] },
+      { label:'クリエイティブ', buttons:['CreativeElement'] }
+    ]}
+  };
+
+  var DEFAULT_QUICK_PHRASES = ['神演技！','泣いた','ノーミス！','地上波感謝','優勝おめでとう'];
+
+  function defaultState(){
+    return {
+      discipline: 'single',
+      event: { name:'', date:'', venue:'', seat:'', hashtagAuto: true },
+      players: [
+        { id: genId(), name:'選手A', song:'', elements:'' },
+        { id: genId(), name:'選手B', song:'', elements:'' }
+      ],
+      currentPlayerId: null,
+      honorific: 'san',
+      separator: 'touten',
+      quickPhrases: DEFAULT_QUICK_PHRASES.slice(),
+      customButtons: [],
+      scorePattern: '1',
+      includeScoreInTweet: true,
+      vibrationEnabled: true,
+      drafts: {},
+      scores: {}
+    };
+  }
+
+  function genId(){ return 'p_' + Math.random().toString(36).slice(2,10) + Date.now().toString(36); }
+
+  /* ============================================================
+     状態の読み込み・保存
+  ============================================================ */
+  var state = loadState();
+  if(!state.currentPlayerId && state.players.length){ state.currentPlayerId = state.players[0].id; }
+
+  function loadState(){
+    try{
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if(!raw) return defaultState();
+      var parsed = JSON.parse(raw);
+      var base = defaultState();
+      for(var k in base){ if(parsed[k] === undefined) parsed[k] = base[k]; }
+      return parsed;
+    }catch(e){ return defaultState(); }
+  }
+
+  var saveTimer = null;
+  function saveState(){
+    try{
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(function(){
+        try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){}
+      }, 150);
+    }catch(e){}
+  }
+
+  /* ============================================================
+     Undoスタック
+  ============================================================ */
+  var undoStack = [];
+  function pushUndo(){
+    try{
+      var draft = getCurrentDraft();
+      undoStack.push(draft);
+      if(undoStack.length > 50) undoStack.shift();
+    }catch(e){}
+  }
+  function doUndo(){
+    try{
+      if(undoStack.length === 0){ showToast('これ以上戻せません'); return; }
+      var prev = undoStack.pop();
+      setCurrentDraft(prev.text);
+      suppressSeparator = prev.suppress;
+      renderPreview();
+      showToast('元に戻しました');
+    }catch(e){}
+  }
+
+  var suppressSeparator = false;
+
+  /* ============================================================
+     draft（下書き）管理: 選手ごとに保持
+  ============================================================ */
+  function getCurrentDraft(){
+    var pid = state.currentPlayerId;
+    return { text: state.drafts[pid] || '', suppress: false };
+  }
+  function setCurrentDraft(text){
+    var pid = state.currentPlayerId;
+    state.drafts[pid] = text;
+    saveState();
+  }
+
+  /* ============================================================
+     DOM参照
+  ============================================================ */
+  var $ = function(id){ return document.getElementById(id); };
+  var elDisciplineTabs = $('disciplineTabs');
+  var elEventTagRow = $('eventTagRow');
+  var elSelectPlayer = $('selectPlayer');
+  var elInputPlayerName = $('inputPlayerName');
+  var elInputPlayerSong = $('inputPlayerSong');
+  var elInputPlayerElements = $('inputPlayerElements');
+  var elHonorificToggle = $('honorificToggle');
+  var elSeparatorToggle = $('separatorToggle');
+  var elPreviewTextarea = $('previewTextarea');
+  var elCharCounter = $('charCounter');
+  var elAppendPreview = $('appendPreview');
+  var elQuickPhraseButtons = $('quickPhraseButtons');
+  var elTouchGroups = $('touchGroups');
+  var elCustomButtonsRow = $('customButtonsRow');
+  var elInputSP = $('inputSP');
+  var elInputFS = $('inputFS');
+  var elTotalDisplay = $('totalDisplay');
+  var elScorePatternSelect = $('scorePatternSelect');
+  var elToggleIncludeScore = $('toggleIncludeScore');
+  var elToast = $('toast');
+
+  /* ============================================================
+     バイブレーション
+  ============================================================ */
+  function vibrate(ms){
+    try{
+      if(state.vibrationEnabled && navigator.vibrate){ navigator.vibrate(ms || 15); }
+    }catch(e){}
+  }
+
+  function showToast(msg){
+    try{
+      elToast.textContent = msg;
+      elToast.classList.add('show');
+      clearTimeout(showToast._t);
+      showToast._t = setTimeout(function(){ elToast.classList.remove('show'); }, 1600);
+    }catch(e){}
+  }
+
+  /* ============================================================
+     選手ヘルパー
+  ============================================================ */
+  function getCurrentPlayer(){
+    for(var i=0;i<state.players.length;i++){
+      if(state.players[i].id === state.currentPlayerId) return state.players[i];
+    }
+    return state.players[0] || null;
+  }
+  function getCurrentPlayerIndex(){
+    for(var i=0;i<state.players.length;i++){
+      if(state.players[i].id === state.currentPlayerId) return i;
+    }
+    return 0;
+  }
+
+  /* ============================================================
+     区切り文字・挿入ロジック
+  ============================================================ */
+  function getSeparator(){ return SEPARATOR_MAP[state.separator] || '、'; }
+
+  function insertToken(token, opts){
+    opts = opts || {};
+    pushUndo();
+    var current = getCurrentDraft().text;
+    var glueBefore = !!opts.glueBefore;
+    var glueAfter = !!opts.glueAfter;
+    var needSep = current.length > 0 && !glueBefore && !suppressSeparator;
+    var sep = needSep ? getSeparator() : '';
+    var next = current + sep + token;
+    setCurrentDraft(next);
+    suppressSeparator = glueAfter;
+    vibrate(15);
+    renderPreview();
+  }
+
+  function normalizeElementsList(raw){
+    if(!raw) return [];
+    return raw.split(/[,、\/\s]+/).map(function(s){ return s.trim(); }).filter(function(s){ return s.length>0; });
+  }
+
+  /* ============================================================
+     プレビュー・カウンター・末尾自動追加
+  ============================================================ */
+  function buildScoreLine(){
+    var sp = parseFloat(elInputSP.value);
+    var fs = parseFloat(elInputFS.value);
+    var hasSp = !isNaN(sp);
+    var hasFs = !isNaN(fs);
+    if(!hasSp && !hasFs) return '';
+    if(hasFs){
+      var total = (hasSp?sp:0) + fs;
+      var spTxt = (hasSp?sp:0).toFixed(2);
+      var fsTxt = fs.toFixed(2);
+      var totalTxt = total.toFixed(2);
+      if(state.scorePattern === '1'){
+        return 'FS: ' + fsTxt + ' / Total: ' + totalTxt + ' (SP: ' + spTxt + ' + FS: ' + fsTxt + ')';
+      }else if(state.scorePattern === '2'){
+        return 'FS: ' + fsTxt + ' ( Total: ' + totalTxt + ' )';
+      }else{
+        return 'Total ' + totalTxt + ' (+' + fsTxt + ')';
+      }
+    }else{
+      return 'SP: ' + sp.toFixed(2);
+    }
+  }
+
+  function buildHashtagLine(){
+    if(!state.event.hashtagAuto) return '';
+    var tags = [];
+    if(state.event.name) tags.push('#' + state.event.name.replace(/\s+/g,''));
+    if(state.event.venue) tags.push('#' + state.event.venue.replace(/\s+/g,''));
+    return tags.join(' ');
+  }
+
+  function buildFinalText(){
+    var body = getCurrentDraft().text;
+    var parts = [body];
+    if(state.includeScoreInTweet){
+      var scoreLine = buildScoreLine();
+      if(scoreLine) parts.push(scoreLine);
+    }
+    var hashLine = buildHashtagLine();
+    if(hashLine) parts.push(hashLine);
+    return parts.filter(function(p){ return p && p.length>0; }).join('\n');
+  }
+
+  function renderPreview(){
+    var draft = getCurrentDraft().text;
+    if(elPreviewTextarea.value !== draft){ elPreviewTextarea.value = draft; }
+    var finalText = buildFinalText();
+    var len = Array.from(finalText).length;
+    elCharCounter.textContent = len + ' / 140文字';
+    elCharCounter.classList.toggle('warn', len > 120);
+
+    var appended = [];
+    if(state.includeScoreInTweet){
+      var s = buildScoreLine();
+      if(s) appended.push('得点: ' + s);
+    }
+    var h = buildHashtagLine();
+    if(h) appended.push('ハッシュタグ: ' + h);
+    elAppendPreview.textContent = appended.length ? ('末尾に自動追加される内容 → ' + appended.join(' / ')) : '末尾に自動追加される内容: なし';
+
+    renderTotalDisplay();
+  }
+
+  function renderTotalDisplay(){
+    var sp = parseFloat(elInputSP.value);
+    var fs = parseFloat(elInputFS.value);
+    if(isNaN(fs)){ elTotalDisplay.textContent = 'Total: --'; return; }
+    var total = (isNaN(sp)?0:sp) + fs;
+    elTotalDisplay.textContent = 'Total: ' + total.toFixed(2);
+  }
+
+  /* ============================================================
+     描画: 大会情報タグ
+  ============================================================ */
+  function renderEventTags(){
+    var chips = [];
+    if(state.event.name) chips.push(state.event.name);
+    if(state.event.date) chips.push(state.event.date);
+    if(state.event.venue) chips.push(state.event.venue);
+    if(state.event.seat) chips.push(state.event.seat);
+    if(chips.length === 0){
+      elEventTagRow.innerHTML = '<span class="chip">大会情報未設定（⚙️から設定できます）</span>';
+      return;
+    }
+    elEventTagRow.innerHTML = chips.map(function(c){
+      return '<span class="chip">' + escapeHtml(c) + '</span>';
+    }).join('');
+  }
+
+  function escapeHtml(str){
+    return String(str).replace(/[&<>"']/g, function(ch){
+      return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[ch];
+    });
+  }
+
+  /* ============================================================
+     描画: 選手選択・編集フィールド
+  ============================================================ */
+  function renderPlayerSelect(){
+    elSelectPlayer.innerHTML = state.players.map(function(p,i){
+      return '<option value="' + p.id + '">' + (i+1) + '. ' + escapeHtml(p.name || '(名称未設定)') + '</option>';
+    }).join('');
+    elSelectPlayer.value = state.currentPlayerId;
+  }
+
+  function renderPlayerFields(){
+    var p = getCurrentPlayer();
+    if(!p) return;
+    elInputPlayerName.value = p.name || '';
+    elInputPlayerSong.value = p.song || '';
+    elInputPlayerElements.value = p.elements || '';
+  }
+
+  function renderToggleGroup(container, currentValue){
+    var btns = container.querySelectorAll('button');
+    btns.forEach(function(b){
+      b.setAttribute('aria-pressed', b.getAttribute('data-value') === currentValue ? 'true' : 'false');
+    });
+  }
+
+  /* ============================================================
+     描画: 技・評価ボタンエリア
+  ============================================================ */
+  function renderTouchGroups(){
+    var cfg = DISCIPLINE_CONFIG[state.discipline];
+    var html = '';
+    cfg.groups.forEach(function(g){
+      html += '<div>';
+      html += '<div class="touch-group-title">' + escapeHtml(g.label) + '</div>';
+      html += '<div class="touch-grid">';
+      g.buttons.forEach(function(b){
+        html += '<button data-insert="' + escapeHtml(b) + '" data-glue-before="0" data-glue-after="0">' + escapeHtml(b) + '</button>';
+      });
+      html += '</div></div>';
+    });
+    elTouchGroups.innerHTML = html;
+  }
+
+  function renderCustomButtons(){
+    if(!state.customButtons.length){ elCustomButtonsRow.innerHTML = ''; return; }
+    var html = '<h3>カスタムボタン</h3><div class="touch-grid">';
+    state.customButtons.forEach(function(cb){
+      var gb = cb.glue === 'glue' || cb.glue === 'glueOpen' ? '1' : '0';
+      var ga = cb.glue === 'glueOpen' ? '1' : '0';
+      html += '<button data-insert="' + escapeHtml(cb.insert) + '" data-glue-before="' + gb + '" data-glue-after="' + ga + '">' + escapeHtml(cb.label) + '</button>';
+    });
+    html += '</div>';
+    elCustomButtonsRow.innerHTML = html;
+  }
+
+  /* ============================================================
+     描画: クイック定型文
+  ============================================================ */
+  function renderQuickPhrases(){
+    elQuickPhraseButtons.innerHTML = state.quickPhrases.map(function(t,i){
+      return '<button data-phrase-index="' + i + '">' + escapeHtml(t) + '</button>';
+    }).join('');
+  }
+
+  /* ============================================================
+     全体再描画
+  ============================================================ */
+  function renderAll(){
+    renderEventTags();
+    renderPlayerSelect();
+    renderPlayerFields();
+    renderToggleGroup(elHonorificToggle, state.honorific);
+    renderToggleGroup(elSeparatorToggle, state.separator);
+    renderTouchGroups();
+    renderCustomButtons();
+    renderQuickPhrases();
+    elScorePatternSelect.value = state.scorePattern;
+    elToggleIncludeScore.checked = !!state.includeScoreInTweet;
+    var sc = state.scores[state.currentPlayerId] || {};
+    elInputSP.value = sc.sp !== undefined ? sc.sp : '';
+    elInputFS.value = sc.fs !== undefined ? sc.fs : '';
+    renderPreview();
+  }
+
+  /* ============================================================
+     イベントリスナー: ヘッダー / 種目タブ
+  ============================================================ */
+  elDisciplineTabs.addEventListener('click', function(e){
+    var btn = e.target.closest('button[data-discipline]');
+    if(!btn) return;
+    state.discipline = btn.getAttribute('data-discipline');
+    Array.from(elDisciplineTabs.querySelectorAll('button')).forEach(function(b){
+      b.setAttribute('aria-pressed', b === btn ? 'true' : 'false');
+    });
+    saveState();
+    renderTouchGroups();
+    renderCustomButtons();
+    vibrate(10);
+  });
+
+  /* ============================================================
+     イベントリスナー: 選手選択・編集
+  ============================================================ */
+  elSelectPlayer.addEventListener('change', function(){
+    state.currentPlayerId = elSelectPlayer.value;
+    saveState();
+    renderPlayerFields();
+    undoStack = [];
+    var sc = state.scores[state.currentPlayerId] || {};
+    elInputSP.value = sc.sp !== undefined ? sc.sp : '';
+    elInputFS.value = sc.fs !== undefined ? sc.fs : '';
+    renderPreview();
+  });
+
+  $('btnPrevPlayer').addEventListener('click', function(){
+    var idx = getCurrentPlayerIndex();
+    idx = (idx - 1 + state.players.length) % state.players.length;
+    state.currentPlayerId = state.players[idx].id;
+    saveState();
+    renderPlayerSelect(); renderPlayerFields(); renderPreview();
+    var sc = state.scores[state.currentPlayerId] || {};
+    elInputSP.value = sc.sp !== undefined ? sc.sp : '';
+    elInputFS.value = sc.fs !== undefined ? sc.fs : '';
+    vibrate(10);
+  });
+  $('btnNextPlayer').addEventListener('click', function(){
+    var idx = getCurrentPlayerIndex();
+    idx = (idx + 1) % state.players.length;
+    state.currentPlayerId = state.players[idx].id;
+    saveState();
+    renderPlayerSelect(); renderPlayerFields(); renderPreview();
+    var sc = state.scores[state.currentPlayerId] || {};
+    elInputSP.value = sc.sp !== undefined ? sc.sp : '';
+    elInputFS.value = sc.fs !== undefined ? sc.fs : '';
+    vibrate(10);
+  });
+
+  elInputPlayerName.addEventListener('input', function(){
+    var p = getCurrentPlayer(); if(!p) return;
+    p.name = elInputPlayerName.value;
+    saveState(); renderPlayerSelect();
+    var opt = Array.from(elSelectPlayer.options).find(function(o){ return o.value === state.currentPlayerId; });
+    if(opt){ elSelectPlayer.value = state.currentPlayerId; }
+  });
+  elInputPlayerSong.addEventListener('input', function(){
+    var p = getCurrentPlayer(); if(!p) return;
+    p.song = elInputPlayerSong.value; saveState();
+  });
+  elInputPlayerElements.addEventListener('input', function(){
+    var p = getCurrentPlayer(); if(!p) return;
+    p.elements = elInputPlayerElements.value; saveState();
+  });
+
+  elHonorificToggle.addEventListener('click', function(e){
+    var btn = e.target.closest('button[data-value]'); if(!btn) return;
+    state.honorific = btn.getAttribute('data-value');
+    saveState(); renderToggleGroup(elHonorificToggle, state.honorific);
+    vibrate(10);
+  });
+  elSeparatorToggle.addEventListener('click', function(e){
+    var btn = e.target.closest('button[data-value]'); if(!btn) return;
+    state.separator = btn.getAttribute('data-value');
+    saveState(); renderToggleGroup(elSeparatorToggle, state.separator);
+    vibrate(10);
+  });
+
+  $('btnRecallElements').addEventListener('click', function(){
+    var p = getCurrentPlayer(); if(!p) return;
+    var list = normalizeElementsList(p.elements);
+    if(list.length === 0){ showToast('予定構成が未入力です'); return; }
+    pushUndo();
+    setCurrentDraft(list.join(getSeparator()));
+    suppressSeparator = false;
+    renderPreview();
+    vibrate(20);
+    showToast('予定構成を呼び出しました');
+  });
+
+  $('btnInsertName').addEventListener('click', function(){
+    var p = getCurrentPlayer(); if(!p) return;
+    var name = (p.name || '') + (HONORIFIC_MAP[state.honorific] || '');
+    if(!name){ return; }
+    insertToken(name, { glueBefore:false, glueAfter:false });
+  });
+
+  /* ============================================================
+     イベントリスナー: 技・評価・コンボ挿入（イベント委譲）
+  ============================================================ */
+  document.addEventListener('click', function(e){
+    var btn = e.target.closest('button[data-insert]');
+    if(!btn) return;
+    var token = btn.getAttribute('data-insert');
+    var glueBefore = btn.getAttribute('data-glue-before') === '1';
+    var glueAfter = btn.getAttribute('data-glue-after') === '1';
+    insertToken(token, { glueBefore: glueBefore, glueAfter: glueAfter });
+  });
+
+  elQuickPhraseButtons.addEventListener('click', function(e){
+    var btn = e.target.closest('button[data-phrase-index]');
+    if(!btn) return;
+    var idx = parseInt(btn.getAttribute('data-phrase-index'), 10);
+    var phrase = state.quickPhrases[idx];
+    if(phrase === undefined) return;
+    insertToken(phrase, { glueBefore:false, glueAfter:false });
+  });
+
+  /* ============================================================
+     イベントリスナー: プレビュー手動編集
+  ============================================================ */
+  elPreviewTextarea.addEventListener('input', function(){
+    pushUndo();
+    setCurrentDraft(elPreviewTextarea.value);
+    suppressSeparator = false;
+    renderPreview();
+  });
+
+  /* ============================================================
+     イベントリスナー: 得点
+  ============================================================ */
+  function saveScoreForCurrentPlayer(){
+    state.scores[state.currentPlayerId] = {
+      sp: elInputSP.value === '' ? undefined : parseFloat(elInputSP.value),
+      fs: elInputFS.value === '' ? undefined : parseFloat(elInputFS.value)
+    };
+    saveState();
+  }
+  elInputSP.addEventListener('input', function(){ saveScoreForCurrentPlayer(); renderPreview(); });
+  elInputFS.addEventListener('input', function(){ saveScoreForCurrentPlayer(); renderPreview(); });
+  elScorePatternSelect.addEventListener('change', function(){
+    state.scorePattern = elScorePatternSelect.value; saveState(); renderPreview();
+  });
+  elToggleIncludeScore.addEventListener('change', function(){
+    state.includeScoreInTweet = elToggleIncludeScore.checked; saveState(); renderPreview();
+  });
+
+  /* ============================================================
+     イベントリスナー: Undo / コピー / X投稿
+  ============================================================ */
+  $('btnUndo').addEventListener('click', function(){ doUndo(); vibrate(20); });
+
+  $('btnCopy').addEventListener('click', function(){
+    var text = buildFinalText();
+    copyToClipboard(text);
+  });
+
+  function copyToClipboard(text){
+    try{
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(text).then(function(){
+          showToast('コピーしました');
+        }).catch(function(){ fallbackCopy(text); });
+      }else{
+        fallbackCopy(text);
+      }
+    }catch(e){ fallbackCopy(text); }
+  }
+  function fallbackCopy(text){
+    try{
+      var ta = document.createElement('textarea');
+      ta.value = text; ta.style.position='fixed'; ta.style.opacity='0';
+      document.body.appendChild(ta); ta.focus(); ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      showToast('コピーしました');
+    }catch(e){ showToast('コピーに失敗しました'); }
+  }
+
+  $('btnPostX').addEventListener('click', function(){
+    try{
+      var text = buildFinalText();
+      var url = 'https://x.com/intent/tweet?text=' + encodeURIComponent(text);
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }catch(e){ showToast('投稿画面を開けませんでした'); }
+  });
+
+  /* ============================================================
+     設定モーダル
+  ============================================================ */
+  var elSettingsOverlay = $('settingsOverlay');
+  $('btnOpenSettings').addEventListener('click', function(){
+    fillSettingsForm();
+    elSettingsOverlay.classList.add('open');
+  });
+  $('btnCloseSettings').addEventListener('click', function(){
+    elSettingsOverlay.classList.remove('open');
+  });
+  elSettingsOverlay.addEventListener('click', function(e){
+    if(e.target === elSettingsOverlay) elSettingsOverlay.classList.remove('open');
+  });
+
+  function fillSettingsForm(){
+    $('settingEventName').value = state.event.name || '';
+    $('settingEventDate').value = state.event.date || '';
+    $('settingVenue').value = state.event.venue || '';
+    $('settingSeat').value = state.event.seat || '';
+    $('toggleHashtag').checked = !!state.event.hashtagAuto;
+    $('toggleVibration').checked = !!state.vibrationEnabled;
+    renderPlayerListManage();
+    renderQuickPhraseEdit();
+    renderCustomButtonManage();
+  }
+
+  ['settingEventName','settingEventDate','settingVenue','settingSeat'].forEach(function(id){
+    $(id).addEventListener('input', function(){
+      state.event.name = $('settingEventName').value;
+      state.event.date = $('settingEventDate').value;
+      state.event.venue = $('settingVenue').value;
+      state.event.seat = $('settingSeat').value;
+      saveState(); renderEventTags(); renderPreview();
+    });
+  });
+  $('toggleHashtag').addEventListener('change', function(){
+    state.event.hashtagAuto = $('toggleHashtag').checked; saveState(); renderPreview();
+  });
+  $('toggleVibration').addEventListener('change', function(){
+    state.vibrationEnabled = $('toggleVibration').checked; saveState();
+  });
+
+  /* ---- 選手リスト管理 ---- */
+  function renderPlayerListManage(){
+    var container = $('playerListManage');
+    container.innerHTML = state.players.map(function(p){
+      return '<div class="player-list-item" data-pid="' + p.id + '">' +
+        '<div class="row"><input type="text" data-field="name" value="' + escapeAttr(p.name) + '" placeholder="選手名">' +
+        '<button class="icon-btn danger" data-action="delete-player">🗑</button></div>' +
+        '<div class="row"><input type="text" data-field="song" value="' + escapeAttr(p.song) + '" placeholder="曲名/プログラム"></div>' +
+        '<div class="row"><input type="text" data-field="elements" value="' + escapeAttr(p.elements) + '" placeholder="予定構成"></div>' +
+        '</div>';
+    }).join('');
+  }
+  function escapeAttr(v){ return escapeHtml(v || '').replace(/"/g,'&quot;'); }
+
+  $('playerListManage').addEventListener('input', function(e){
+    var item = e.target.closest('.player-list-item'); if(!item) return;
+    var pid = item.getAttribute('data-pid');
+    var field = e.target.getAttribute('data-field');
+    var p = state.players.find(function(pp){ return pp.id === pid; });
+    if(!p || !field) return;
+    p[field] = e.target.value;
+    saveState();
+    if(pid === state.currentPlayerId){ renderPlayerFields(); renderPlayerSelect(); }
+  });
+  $('playerListManage').addEventListener('click', function(e){
+    var btn = e.target.closest('button[data-action="delete-player"]'); if(!btn) return;
+    if(state.players.length <= 1){ showToast('選手は最低1人必要です'); return; }
+    var item = btn.closest('.player-list-item');
+    var pid = item.getAttribute('data-pid');
+    state.players = state.players.filter(function(p){ return p.id !== pid; });
+    if(state.currentPlayerId === pid){ state.currentPlayerId = state.players[0].id; }
+    saveState();
+    renderPlayerListManage();
+    renderAll();
+  });
+  $('btnAddPlayer').addEventListener('click', function(){
+    var np = { id: genId(), name:'新しい選手', song:'', elements:'' };
+    state.players.push(np);
+    saveState();
+    renderPlayerListManage();
+    renderPlayerSelect();
+  });
+
+  $('btnBulkExport').addEventListener('click', function(){
+    var lines = state.players.map(function(p){
+      return [p.name||'', p.song||'', p.elements||''].join(',');
+    });
+    $('bulkPlayerText').value = lines.join('\n');
+    showToast('書き出しました');
+  });
+  $('btnBulkImport').addEventListener('click', function(){
+    var raw = $('bulkPlayerText').value;
+    var lines = raw.split('\n').map(function(l){ return l.trim(); }).filter(function(l){ return l.length>0; });
+    if(lines.length === 0){ showToast('取り込むデータがありません'); return; }
+    var newPlayers = lines.map(function(l){
+      var parts = l.split(',');
+      return { id: genId(), name: (parts[0]||'').trim(), song:(parts[1]||'').trim(), elements:(parts[2]||'').trim() };
+    });
+    state.players = newPlayers;
+    state.currentPlayerId = newPlayers[0].id;
+    saveState();
+    renderPlayerListManage();
+    renderAll();
+    showToast('取り込みました');
+  });
+
+  /* ---- 定型文編集 ---- */
+  function renderQuickPhraseEdit(){
+    var container = $('quickPhraseEdit');
+    container.innerHTML = state.quickPhrases.map(function(t,i){
+      return '<div class="quick-phrase-input"><span>' + (i+1) + '</span><input type="text" data-qp-index="' + i + '" value="' + escapeAttr(t) + '"></div>';
+    }).join('');
+  }
+  $('quickPhraseEdit').addEventListener('input', function(e){
+    var idx = e.target.getAttribute('data-qp-index');
+    if(idx === null) return;
+    state.quickPhrases[parseInt(idx,10)] = e.target.value;
+    saveState();
+    renderQuickPhrases();
+  });
+
+  /* ---- カスタムボタン管理 ---- */
+  function renderCustomButtonManage(){
+    var container = $('customButtonManage');
+    if(!state.customButtons.length){ container.innerHTML = '<p class="note-text">カスタムボタンはまだありません。</p>'; return; }
+    container.innerHTML = state.customButtons.map(function(cb){
+      return '<div class="custom-btn-item" data-cbid="' + cb.id + '">' +
+        '<input type="text" data-field="label" value="' + escapeAttr(cb.label) + '" style="flex:1; min-height:40px; border:1px solid var(--color-border-strong); border-radius:6px; padding:0 6px;">' +
+        '<input type="text" data-field="insert" value="' + escapeAttr(cb.insert) + '" style="flex:1; min-height:40px; border:1px solid var(--color-border-strong); border-radius:6px; padding:0 6px;">' +
+        '<button class="icon-btn danger" data-action="delete-custom">🗑</button>' +
+        '</div>';
+    }).join('');
+  }
+  $('customButtonManage').addEventListener('input', function(e){
+    var item = e.target.closest('.custom-btn-item'); if(!item) return;
+    var cbid = item.getAttribute('data-cbid');
+    var field = e.target.getAttribute('data-field');
+    var cb = state.customButtons.find(function(c){ return c.id === cbid; });
+    if(!cb || !field) return;
+    cb[field] = e.target.value;
+    saveState(); renderCustomButtons();
+  });
+  $('customButtonManage').addEventListener('click', function(e){
+    var btn = e.target.closest('button[data-action="delete-custom"]'); if(!btn) return;
+    var cbid = btn.closest('.custom-btn-item').getAttribute('data-cbid');
+    state.customButtons = state.customButtons.filter(function(c){ return c.id !== cbid; });
+    saveState(); renderCustomButtonManage(); renderCustomButtons();
+  });
+  $('btnAddCustomButton').addEventListener('click', function(){
+    var label = $('newCustomLabel').value.trim();
+    var insert = $('newCustomInsert').value.trim();
+    var glue = $('newCustomGlue').value;
+    if(!label || !insert){ showToast('表示名と挿入テキストを入力してください'); return; }
+    state.customButtons.push({ id: genId(), label: label, insert: insert, glue: glue });
+    $('newCustomLabel').value = ''; $('newCustomInsert').value = '';
+    saveState(); renderCustomButtonManage(); renderCustomButtons();
+    showToast('カスタムボタンを追加しました');
+  });
+
+  /* ---- バックアップ＆復元 ---- */
+  $('btnBackupExport').addEventListener('click', function(){
+    try{
+      $('backupText').value = JSON.stringify(state, null, 2);
+      showToast('バックアップを書き出しました');
+    }catch(e){ showToast('書き出しに失敗しました'); }
+  });
+  $('btnBackupImport').addEventListener('click', function(){
+    try{
+      var parsed = JSON.parse($('backupText').value);
+      if(!parsed || !Array.isArray(parsed.players)){ showToast('データ形式が正しくありません'); return; }
+      state = parsed;
+      if(!state.currentPlayerId && state.players.length){ state.currentPlayerId = state.players[0].id; }
+      saveState();
+      fillSettingsForm();
+      renderAll();
+      showToast('復元しました');
+    }catch(e){ showToast('復元に失敗しました（JSON形式を確認してください）'); }
+  });
+
+  /* ============================================================
+     Service Worker登録
+  ============================================================ */
+  try{
+    if('serviceWorker' in navigator){
+      window.addEventListener('load', function(){
+        try{
+          navigator.serviceWorker.register('./sw.js').catch(function(){ /* 登録失敗してもアプリは動作継続 */ });
+        }catch(e){}
+      });
+    }
+  }catch(e){}
+
+  /* ============================================================
+     初期描画
+  ============================================================ */
+  renderAll();
+
+}catch(err){
+  try{
+    console.error('SpoTLight init error:', err);
+    var msg = document.createElement('div');
+    msg.style.cssText = 'padding:16px;color:#7a4b12;background:#fdf1dd;font-size:0.85rem;';
+    msg.textContent = 'アプリの初期化中にエラーが発生しました。画面を再読み込みしてください。';
+    document.body.prepend(msg);
+  }catch(e2){}
+}
+})();
+</script>
+</body>
+</html>
