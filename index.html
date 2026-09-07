@@ -326,7 +326,7 @@
         <div class="toggle-group" id="honorificToggle">
           <button data-value="san" aria-pressed="true">さん</button>
           <button data-value="senshu" aria-pressed="false">選手</button>
-          <button data-value="none" aria-pressed="false">呼び捨て</button>
+          <button data-value="none" aria-pressed="false">敬称なし</button>
         </div>
 
         <h3>区切り文字</h3>
@@ -345,21 +345,17 @@
         <h2>得点入力（Kiss &amp; Cry）</h2>
         <div class="score-inputs">
           <div class="field-row">
-            <label for="inputSP">SP得点</label>
+            <label for="inputSP" id="labelSP">SP得点</label>
             <input type="number" step="0.01" id="inputSP" placeholder="例: 75.30">
           </div>
           <div class="field-row">
-            <label for="inputFS">FS得点</label>
+            <label for="inputFS" id="labelFS">FS得点</label>
             <input type="number" step="0.01" id="inputFS" placeholder="例: 145.20">
           </div>
         </div>
         <div class="total-display" id="totalDisplay">Total: --</div>
         <h3>得点表記パターン</h3>
-        <select class="pattern-select" id="scorePatternSelect">
-          <option value="1">FS: 145.20 / Total: 220.50 (SP: 75.30 + FS: 145.20)</option>
-          <option value="2">FS: 145.20 ( Total: 220.50 )</option>
-          <option value="3">Total 220.50 (+145.20)</option>
-        </select>
+        <select class="pattern-select" id="scorePatternSelect"></select>
         <div class="switch-row">
           <span>得点をツイートに含める</span>
           <label class="switch">
@@ -395,17 +391,22 @@
           <button data-insert="+" data-glue-before="1" data-glue-after="1">＋（接続）</button>
           <button data-insert="+2A" data-glue-before="1" data-glue-after="0">+2A</button>
           <button data-insert="+1Eu+" data-glue-before="1" data-glue-after="1">+1Eu+</button>
+          <button data-insert="+SEQ" data-glue-before="1" data-glue-after="0">+SEQ</button>
+          <button data-insert="+COMBO" data-glue-before="1" data-glue-after="0">+COMBO</button>
+          <button data-insert="+REP" data-glue-before="1" data-glue-after="0">+REP</button>
         </div>
 
-        <h3>ステータス・評価</h3>
+        <h3>ISU正式プロトコル・評価</h3>
         <div class="status-row" id="statusRow">
           <button data-insert="fall" data-glue-before="1" data-glue-after="0">fall<span class="badge">転倒</span></button>
-          <button data-insert="q" data-glue-before="1" data-glue-after="0">q<span class="badge">回転不足懸念</span></button>
+          <button data-insert="q" data-glue-before="1" data-glue-after="0">q<span class="badge">1/4不足懸念</span></button>
           <button data-insert="&lt;" data-glue-before="1" data-glue-after="0">&lt;<span class="badge">回転不足</span></button>
-          <button data-insert="rep" data-glue-before="1" data-glue-after="0">rep<span class="badge">リピート</span></button>
-          <button data-insert="v" data-glue-before="1" data-glue-after="0">v<span class="badge">ノーカン</span></button>
-          <button class="positive" data-insert="美" data-glue-before="1" data-glue-after="0">美<span class="badge">最高加点</span></button>
-          <button class="positive" data-insert="神" data-glue-before="1" data-glue-after="0">神<span class="badge">神演技</span></button>
+          <button data-insert="&lt;&lt;" data-glue-before="1" data-glue-after="0">&lt;&lt;<span class="badge">ダウングレード</span></button>
+          <button data-insert="!" data-glue-before="1" data-glue-after="0">!<span class="badge">エッジ注意</span></button>
+          <button data-insert="e" data-glue-before="1" data-glue-after="0">e<span class="badge">エッジエラー</span></button>
+          <button data-insert="v" data-glue-before="1" data-glue-after="0">v<span class="badge">レベル変更・無効</span></button>
+          <button class="positive" data-insert="美" data-glue-before="1" data-glue-after="0">美<span class="badge">GOE高評価</span></button>
+          <button class="positive" data-insert="神" data-glue-before="1" data-glue-after="0">神<span class="badge">神演出・神演技</span></button>
         </div>
         <div id="customButtonsRow"></div>
 
@@ -438,8 +439,10 @@
       <div class="field-row"><label for="settingEventDate">開催年・日程</label><input type="text" id="settingEventDate" placeholder="例: 2026年 Day 2"></div>
       <div class="field-row"><label for="settingVenue">会場名</label><input type="text" id="settingVenue" placeholder="例: 代々木第一体育館"></div>
       <div class="field-row"><label for="settingSeat">座席（任意）</label><input type="text" id="settingSeat" placeholder="例: アリーナS 2列 15番"></div>
+      <h3 style="margin-top:14px;">任意ハッシュタグの編集</h3>
+      <div class="field-row"><label for="settingHashtagText">ハッシュタグ</label><input type="text" id="settingHashtagText" placeholder="例: #全日本フィギュア #代々木"></div>
       <div class="switch-row">
-        <span>ハッシュタグ自動付与</span>
+        <span>投稿時に文末へ付与</span>
         <label class="switch">
           <input type="checkbox" id="toggleHashtag" checked>
           <span class="track"></span><span class="thumb"></span>
@@ -544,7 +547,7 @@ try{
   function defaultState(){
     return {
       discipline: 'single',
-      event: { name:'', date:'', venue:'', seat:'', hashtagAuto: true },
+      event: { name:'', date:'', venue:'', seat:'', customHashtag:'', hashtagAuto: true },
       players: [
         { id: genId(), name:'選手A', song:'', elements:'' },
         { id: genId(), name:'選手B', song:'', elements:'' }
@@ -715,35 +718,68 @@ try{
   /* ============================================================
      プレビュー・カウンター・末尾自動追加
   ============================================================ */
+  function getScoreLabels(){
+    return state.discipline === 'dance' ? { first:'RD', second:'FD' } : { first:'SP', second:'FS' };
+  }
+
+  var SCORE_PATTERN_TEXT = {
+    '1': function(l){ return 'Total: 220.50'; },
+    '2': function(l){ return l.first + ': 75.30'; },
+    '3': function(l){ return l.second + ': 145.20'; },
+    '4': function(l){ return l.second + ': 145.20 ( Total: 220.50 )'; },
+    '5': function(l){ return l.second + ': 145.20 / Total: 220.50 (' + l.first + ': 75.30 + ' + l.second + ': 145.20)'; }
+  };
+
+  function updateScorePatternOptions(){
+    var l = getScoreLabels();
+    var current = state.scorePattern;
+    elScorePatternSelect.innerHTML = ['1','2','3','4','5'].map(function(v){
+      return '<option value="' + v + '">' + SCORE_PATTERN_TEXT[v](l) + '</option>';
+    }).join('');
+    elScorePatternSelect.value = current;
+  }
+
+  function updateScoreLabels(){
+    var l = getScoreLabels();
+    $('labelSP').textContent = l.first + '得点';
+    $('labelFS').textContent = l.second + '得点';
+  }
+
   function buildScoreLine(){
+    var l = getScoreLabels();
     var sp = parseFloat(elInputSP.value);
     var fs = parseFloat(elInputFS.value);
     var hasSp = !isNaN(sp);
     var hasFs = !isNaN(fs);
     if(!hasSp && !hasFs) return '';
-    if(hasFs){
-      var total = (hasSp?sp:0) + fs;
-      var spTxt = (hasSp?sp:0).toFixed(2);
-      var fsTxt = fs.toFixed(2);
-      var totalTxt = total.toFixed(2);
-      if(state.scorePattern === '1'){
-        return 'FS: ' + fsTxt + ' / Total: ' + totalTxt + ' (SP: ' + spTxt + ' + FS: ' + fsTxt + ')';
-      }else if(state.scorePattern === '2'){
-        return 'FS: ' + fsTxt + ' ( Total: ' + totalTxt + ' )';
-      }else{
-        return 'Total ' + totalTxt + ' (+' + fsTxt + ')';
-      }
-    }else{
-      return 'SP: ' + sp.toFixed(2);
+    var total = (hasSp?sp:0) + (hasFs?fs:0);
+    var spTxt = (hasSp?sp:0).toFixed(2);
+    var fsTxt = (hasFs?fs:0).toFixed(2);
+    var totalTxt = total.toFixed(2);
+    switch(state.scorePattern){
+      case '1':
+        if(!hasFs && !hasSp) return '';
+        return 'Total: ' + totalTxt;
+      case '2':
+        if(!hasSp) return '';
+        return l.first + ': ' + spTxt;
+      case '3':
+        if(!hasFs) return '';
+        return l.second + ': ' + fsTxt;
+      case '4':
+        if(!hasFs) return l.first + ': ' + spTxt;
+        return l.second + ': ' + fsTxt + ' ( Total: ' + totalTxt + ' )';
+      case '5':
+        if(!hasFs) return l.first + ': ' + spTxt;
+        return l.second + ': ' + fsTxt + ' / Total: ' + totalTxt + ' (' + l.first + ': ' + spTxt + ' + ' + l.second + ': ' + fsTxt + ')';
+      default:
+        return 'Total: ' + totalTxt;
     }
   }
 
   function buildHashtagLine(){
     if(!state.event.hashtagAuto) return '';
-    var tags = [];
-    if(state.event.name) tags.push('#' + state.event.name.replace(/\s+/g,''));
-    if(state.event.venue) tags.push('#' + state.event.venue.replace(/\s+/g,''));
-    return tags.join(' ');
+    return (state.event.customHashtag || '').trim();
   }
 
   function buildFinalText(){
@@ -886,7 +922,8 @@ try{
     renderTouchGroups();
     renderCustomButtons();
     renderQuickPhrases();
-    elScorePatternSelect.value = state.scorePattern;
+    updateScoreLabels();
+    updateScorePatternOptions();
     elToggleIncludeScore.checked = !!state.includeScoreInTweet;
     var sc = state.scores[state.currentPlayerId] || {};
     elInputSP.value = sc.sp !== undefined ? sc.sp : '';
@@ -907,6 +944,9 @@ try{
     saveState();
     renderTouchGroups();
     renderCustomButtons();
+    updateScoreLabels();
+    updateScorePatternOptions();
+    renderPreview();
     vibrate(10);
   });
 
@@ -1105,6 +1145,7 @@ try{
     $('settingEventDate').value = state.event.date || '';
     $('settingVenue').value = state.event.venue || '';
     $('settingSeat').value = state.event.seat || '';
+    $('settingHashtagText').value = state.event.customHashtag || '';
     $('toggleHashtag').checked = !!state.event.hashtagAuto;
     $('toggleVibration').checked = !!state.vibrationEnabled;
     renderPlayerListManage();
@@ -1112,12 +1153,13 @@ try{
     renderCustomButtonManage();
   }
 
-  ['settingEventName','settingEventDate','settingVenue','settingSeat'].forEach(function(id){
+  ['settingEventName','settingEventDate','settingVenue','settingSeat','settingHashtagText'].forEach(function(id){
     $(id).addEventListener('input', function(){
       state.event.name = $('settingEventName').value;
       state.event.date = $('settingEventDate').value;
       state.event.venue = $('settingVenue').value;
       state.event.seat = $('settingSeat').value;
+      state.event.customHashtag = $('settingHashtagText').value;
       saveState(); renderEventTags(); renderPreview();
     });
   });
