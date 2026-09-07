@@ -1031,7 +1031,7 @@ try{
     if(metaLines.length) appended.push(metaLines.join(' / '));
     if(state.includeScoreInTweet){
       var s = buildScoreLine();
-      if(s) appended.push('得点: ' + s);
+      if(s) appended.push(s);
     }
     var h = buildHashtagLine();
     if(h) appended.push('ハッシュタグ: ' + h);
