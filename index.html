@@ -1028,7 +1028,7 @@ try{
 
     var appended = [];
     var metaLines = buildMetaLines();
-    if(metaLines.length) appended.push('先頭: ' + metaLines.join(' ／ '));
+    if(metaLines.length) appended.push(metaLines.join(' / '));
     if(state.includeScoreInTweet){
       var s = buildScoreLine();
       if(s) appended.push('得点: ' + s);
