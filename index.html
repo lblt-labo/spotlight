@@ -116,6 +116,13 @@
     border:1px solid var(--color-border-strong); border-radius: var(--radius-s); padding:9px 10px; font-size:0.9rem; min-height:var(--tap-min);
   }
   .toggle-group{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px; }
+  .segment-toggle{ margin-bottom:12px; }
+  .segment-toggle button{
+    flex:1; min-height:52px; font-size:0.95rem; border-radius:var(--radius-s); border-width:2px;
+  }
+  .segment-toggle button[aria-pressed="true"]{
+    background: var(--color-ice-blue-dark); border-color: var(--color-ice-blue-dark);
+  }
   .toggle-group button{
     padding:8px 12px; border-radius: 999px; border:1px solid var(--color-border-strong);
     background:#fff; color:var(--color-text); font-size:0.78rem; font-weight:700; cursor:pointer; min-height:40px;
@@ -341,6 +348,11 @@
 
     <section class="panel area-player" id="panelPlayer">
       <h2>選手選択</h2>
+      <h3 style="margin-top:0;">演技セグメント</h3>
+      <div class="toggle-group segment-toggle" id="segmentToggle">
+        <button data-value="sp" aria-pressed="true">SP</button>
+        <button data-value="fs" aria-pressed="false">FS</button>
+      </div>
       <div class="player-nav">
         <button class="nav-arrow" id="btnPrevPlayer" aria-label="前の選手">◀</button>
         <select id="selectPlayer"></select>
@@ -355,7 +367,7 @@
         <input type="text" id="inputPlayerSong" placeholder="例: 白鳥の湖">
       </div>
       <div class="field-row">
-        <label for="inputPlayerElements">予定構成</label>
+        <label for="inputPlayerElements" id="labelPlayerElements">予定構成（SP）</label>
         <input type="text" id="inputPlayerElements" placeholder="例: 4S / 4T+3T / 3A（空欄可）">
       </div>
       <button class="recall-btn" id="btnOpenElementsBuilder">🧩 予定構成をボタンで入力</button>
@@ -380,7 +392,7 @@
     </section>
 
     <section class="panel area-preview" id="panelPreview">
-      <h2>実況プレビュー</h2>
+      <h2>実況プレビュー <span id="previewSegmentLabel" class="note-text" style="font-weight:800;"></span></h2>
       <textarea class="preview-textarea" id="previewTextarea" placeholder="ここに実況が表示されます。直接編集も可能です。"></textarea>
       <div class="counter-row">
         <span class="counter" id="charCounter">0 / 140文字</span>
@@ -422,7 +434,7 @@
     </section>
 
     <section class="panel area-score" id="panelScore">
-      <h2>得点入力</h2>
+      <h2>得点入力（キスクラ待機用）</h2>
       <div class="score-inputs">
         <div class="field-row">
           <label for="inputSP" id="labelSP">SP得点</label>
@@ -433,6 +445,7 @@
           <input type="number" step="0.01" id="inputFS" placeholder="例: 145.20">
         </div>
       </div>
+      <p class="note-text" id="savedSpNote" style="display:none;"></p>
       <div class="total-display" id="totalDisplay">Total: --</div>
       <h3>得点表記パターン</h3>
       <select class="pattern-select" id="scorePatternSelect"></select>
@@ -446,6 +459,11 @@
     </section>
 
   </main>
+
+  <footer style="text-align: center; padding: 20px 10px; font-size: 0.8rem; color: #666; border-top: 1px solid #e0e0e0; margin-top: 30px;">
+    <p>免責事項: 本アプリの使用により生じた損害やトラブルについて、制作者は一切の責任を負いません。</p>
+    <p>連絡先: <a href="https://x.com/lblt_labo" target="_blank" rel="noopener noreferrer" style="color: #4a90e2; text-decoration: none;">@lblt_labo</a></p>
+  </footer>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -474,7 +492,7 @@
         <li>「↵ 改行」ボタンで本文に改行を一発挿入できます。</li>
         <li>右下の↩️ボタンで直前の操作を1つ取り消せます。</li>
         <li>「💾 ログに保存」で今の本文を履歴に保存し、📜ログ画面から後でコピーし直せます。</li>
-        <li>得点欄は演技後に入力するため、画面の一番下に配置されています。</li>
+        <li>得点欄はキスクラ待機中に入力する想定で、画面の一番下に配置されています。</li>
         <li>⚙️設定から選手リストや定型文、ハッシュタグ、カスタムボタンなどを自由に編集できます。</li>
       </ul>
     </div>
@@ -497,7 +515,7 @@
 <div class="modal-overlay" id="builderOverlay">
   <div class="modal-box">
     <div class="modal-header">
-      <h2>🧩 予定構成をボタンで入力</h2>
+      <h2 id="builderModalTitle">🧩 予定構成をボタンで入力</h2>
       <button class="modal-close" id="btnCloseBuilder" aria-label="閉じる">✕</button>
     </div>
     <div class="builder-preview" id="builderPreview">（未入力）</div>
@@ -546,7 +564,7 @@
       <div id="playerListManage"></div>
       <button class="add-btn" id="btnAddPlayer">＋ 選手を追加</button>
       <h3 style="margin-top:14px;">一括インポート / エクスポート</h3>
-      <p class="note-text">1行1名で「選手名,曲名,予定構成」の形式（曲名・予定構成は省略可）</p>
+      <p class="note-text">1行1名で「選手名,曲名,SP予定構成,FS予定構成」の形式（曲名・予定構成は省略可）</p>
       <textarea class="bulk-io" id="bulkPlayerText"></textarea>
       <div class="modal-btn-row">
         <button id="btnBulkExport">書き出す</button>
@@ -673,10 +691,11 @@ try{
   function defaultState(){
     return {
       discipline: 'single',
+      currentSegment: 'sp',
       event: { name:'', date:'', venue:'', seat:'', customHashtag:'', hashtagAuto: true },
       players: [
-        { id: genId(), name:'選手A', song:'', elements:'' },
-        { id: genId(), name:'選手B', song:'', elements:'' }
+        { id: genId(), name:'選手A', song:'', elements:{ sp:'', fs:'' } },
+        { id: genId(), name:'選手B', song:'', elements:{ sp:'', fs:'' } }
       ],
       currentPlayerId: null,
       honorific: 'san',
@@ -708,6 +727,19 @@ try{
       var base = defaultState();
       for(var k in base){ if(parsed[k] === undefined) parsed[k] = base[k]; }
       if(!Array.isArray(parsed.logs)) parsed.logs = [];
+      if(parsed.currentSegment !== 'sp' && parsed.currentSegment !== 'fs'){ parsed.currentSegment = 'sp'; }
+      if(Array.isArray(parsed.players)){
+        parsed.players.forEach(function(p){
+          if(typeof p.elements === 'string'){
+            p.elements = { sp: p.elements, fs: '' };
+          }else if(!p.elements || typeof p.elements !== 'object'){
+            p.elements = { sp:'', fs:'' };
+          }else{
+            if(typeof p.elements.sp !== 'string') p.elements.sp = '';
+            if(typeof p.elements.fs !== 'string') p.elements.fs = '';
+          }
+        });
+      }
       return parsed;
     }catch(e){ return defaultState(); }
   }
@@ -747,15 +779,16 @@ try{
   var suppressSeparator = false;
 
   /* ============================================================
-     draft（下書き）管理: 選手ごとに保持
+     draft（下書き）管理: 選手×セグメント（SP/FS）ごとに独立保持
   ============================================================ */
+  function getDraftKey(pid, segment){ return pid + '__' + segment; }
   function getCurrentDraft(){
-    var pid = state.currentPlayerId;
-    return { text: state.drafts[pid] || '', suppress: false };
+    var key = getDraftKey(state.currentPlayerId, state.currentSegment);
+    return { text: state.drafts[key] || '', suppress: false };
   }
   function setCurrentDraft(text){
-    var pid = state.currentPlayerId;
-    state.drafts[pid] = text;
+    var key = getDraftKey(state.currentPlayerId, state.currentSegment);
+    state.drafts[key] = text;
     saveState();
   }
 
@@ -769,6 +802,10 @@ try{
   var elInputPlayerName = $('inputPlayerName');
   var elInputPlayerSong = $('inputPlayerSong');
   var elInputPlayerElements = $('inputPlayerElements');
+  var elLabelPlayerElements = $('labelPlayerElements');
+  var elSegmentToggle = $('segmentToggle');
+  var elPreviewSegmentLabel = $('previewSegmentLabel');
+  var elSavedSpNote = $('savedSpNote');
   var elHonorificToggle = $('honorificToggle');
   var elSeparatorToggle = $('separatorToggle');
   var elPreviewTextarea = $('previewTextarea');
@@ -988,7 +1025,7 @@ try{
     if(!p) return;
     elInputPlayerName.value = p.name || '';
     elInputPlayerSong.value = p.song || '';
-    elInputPlayerElements.value = p.elements || '';
+    elInputPlayerElements.value = p.elements[state.currentSegment] || '';
   }
 
   function renderToggleGroup(container, currentValue){
@@ -998,10 +1035,41 @@ try{
     });
   }
 
+  function renderSegmentLabels(){
+    var l = getScoreLabels();
+    var segText = state.currentSegment === 'sp' ? l.first : l.second;
+    elLabelPlayerElements.textContent = '予定構成（' + segText + '）';
+    elPreviewSegmentLabel.textContent = '（' + segText + '）';
+    renderToggleGroup(elSegmentToggle, state.currentSegment);
+    var segBtns = elSegmentToggle.querySelectorAll('button');
+    segBtns[0].textContent = l.first;
+    segBtns[1].textContent = l.second;
+  }
+
+  function updateScoreSegmentUI(){
+    var isSp = state.currentSegment === 'sp';
+    elInputSP.disabled = !isSp;
+    elInputFS.disabled = isSp;
+    var l = getScoreLabels();
+    if(!isSp){
+      var sc = state.scores[state.currentPlayerId] || {};
+      if(sc.sp !== undefined && !isNaN(parseFloat(sc.sp))){
+        elSavedSpNote.style.display = 'block';
+        elSavedSpNote.textContent = l.first + '得点（保存済み）: ' + parseFloat(sc.sp).toFixed(2);
+      }else{
+        elSavedSpNote.style.display = 'block';
+        elSavedSpNote.textContent = l.first + '得点はまだ入力されていません（SPタブで入力できます）';
+      }
+    }else{
+      elSavedSpNote.style.display = 'none';
+    }
+  }
+
   function refreshScoreFieldsForCurrentPlayer(){
     var sc = state.scores[state.currentPlayerId] || {};
     elInputSP.value = sc.sp !== undefined ? sc.sp : '';
     elInputFS.value = sc.fs !== undefined ? sc.fs : '';
+    updateScoreSegmentUI();
   }
 
   /* ============================================================
@@ -1078,6 +1146,7 @@ try{
     renderPlayerFields();
     renderToggleGroup(elHonorificToggle, state.honorific);
     renderToggleGroup(elSeparatorToggle, state.separator);
+    renderSegmentLabels();
     renderTouchGroups();
     renderComboRow();
     renderCustomButtons();
@@ -1105,8 +1174,27 @@ try{
     renderCustomButtons();
     updateScoreLabels();
     updateScorePatternOptions();
+    renderSegmentLabels();
+    updateScoreSegmentUI();
     renderPreview();
     vibrate(10);
+  });
+
+  /* ============================================================
+     イベントリスナー: セグメント切替（SP/RD ⇄ FS/FD）
+  ============================================================ */
+  elSegmentToggle.addEventListener('click', function(e){
+    var btn = e.target.closest('button[data-value]'); if(!btn) return;
+    var seg = btn.getAttribute('data-value');
+    if(seg === state.currentSegment) return;
+    state.currentSegment = seg;
+    saveState();
+    undoStack = [];
+    renderSegmentLabels();
+    renderPlayerFields();
+    updateScoreSegmentUI();
+    renderPreview();
+    vibrate(15);
   });
 
   /* ============================================================
@@ -1148,7 +1236,7 @@ try{
   });
   elInputPlayerElements.addEventListener('input', function(){
     var p = getCurrentPlayer(); if(!p) return;
-    p.elements = elInputPlayerElements.value; saveState();
+    p.elements[state.currentSegment] = elInputPlayerElements.value; saveState();
   });
 
   elHonorificToggle.addEventListener('click', function(e){
@@ -1166,7 +1254,7 @@ try{
 
   $('btnRecallElements').addEventListener('click', function(){
     var p = getCurrentPlayer(); if(!p) return;
-    var list = normalizeElementsList(p.elements);
+    var list = normalizeElementsList(p.elements[state.currentSegment]);
     if(list.length === 0){ showToast('予定構成が未入力です'); return; }
     pushUndo();
     setCurrentDraft(list.join(getSeparator()));
@@ -1357,10 +1445,13 @@ try{
 
   $('btnOpenElementsBuilder').addEventListener('click', function(){
     var p = getCurrentPlayer();
-    builderText = (p && p.elements) ? p.elements : '';
+    builderText = (p && p.elements) ? (p.elements[state.currentSegment] || '') : '';
     builderSuppressSeparator = false;
     renderBuilderTouchGroups();
     renderBuilderPreview();
+    var l = getScoreLabels();
+    var segText = state.currentSegment === 'sp' ? l.first : l.second;
+    $('builderModalTitle').textContent = '🧩 予定構成をボタンで入力（' + segText + '）';
     elBuilderOverlay.classList.add('open');
   });
   $('btnCloseBuilder').addEventListener('click', function(){ elBuilderOverlay.classList.remove('open'); });
@@ -1393,7 +1484,7 @@ try{
   });
   $('btnBuilderApply').addEventListener('click', function(){
     var p = getCurrentPlayer(); if(!p) return;
-    p.elements = builderText;
+    p.elements[state.currentSegment] = builderText;
     saveState();
     renderPlayerFields();
     elBuilderOverlay.classList.remove('open');
@@ -1453,7 +1544,8 @@ try{
         '<div class="row"><input type="text" data-field="name" value="' + escapeAttr(p.name) + '" placeholder="選手名">' +
         '<button class="icon-btn danger" data-action="delete-player">🗑</button></div>' +
         '<div class="row"><input type="text" data-field="song" value="' + escapeAttr(p.song) + '" placeholder="曲名/プログラム"></div>' +
-        '<div class="row"><input type="text" data-field="elements" value="' + escapeAttr(p.elements) + '" placeholder="予定構成"></div>' +
+        '<div class="row"><input type="text" data-field="elementsSp" value="' + escapeAttr(p.elements.sp) + '" placeholder="SP予定構成"></div>' +
+        '<div class="row"><input type="text" data-field="elementsFs" value="' + escapeAttr(p.elements.fs) + '" placeholder="FS予定構成"></div>' +
         '</div>';
     }).join('');
   }
@@ -1465,7 +1557,9 @@ try{
     var field = e.target.getAttribute('data-field');
     var p = state.players.find(function(pp){ return pp.id === pid; });
     if(!p || !field) return;
-    p[field] = e.target.value;
+    if(field === 'elementsSp'){ p.elements.sp = e.target.value; }
+    else if(field === 'elementsFs'){ p.elements.fs = e.target.value; }
+    else{ p[field] = e.target.value; }
     saveState();
     if(pid === state.currentPlayerId){ renderPlayerFields(); renderPlayerSelect(); }
   });
@@ -1481,7 +1575,7 @@ try{
     renderAll();
   });
   $('btnAddPlayer').addEventListener('click', function(){
-    var np = { id: genId(), name:'新しい選手', song:'', elements:'' };
+    var np = { id: genId(), name:'新しい選手', song:'', elements:{ sp:'', fs:'' } };
     state.players.push(np);
     saveState();
     renderPlayerListManage();
@@ -1490,7 +1584,7 @@ try{
 
   $('btnBulkExport').addEventListener('click', function(){
     var lines = state.players.map(function(p){
-      return [p.name||'', p.song||'', p.elements||''].join(',');
+      return [p.name||'', p.song||'', p.elements.sp||'', p.elements.fs||''].join(',');
     });
     $('bulkPlayerText').value = lines.join('\n');
     showToast('書き出しました');
@@ -1501,7 +1595,7 @@ try{
     if(lines.length === 0){ showToast('取り込むデータがありません'); return; }
     var newPlayers = lines.map(function(l){
       var parts = l.split(',');
-      return { id: genId(), name: (parts[0]||'').trim(), song:(parts[1]||'').trim(), elements:(parts[2]||'').trim() };
+      return { id: genId(), name: (parts[0]||'').trim(), song:(parts[1]||'').trim(), elements:{ sp:(parts[2]||'').trim(), fs:(parts[3]||'').trim() } };
     });
     state.players = newPlayers;
     state.currentPlayerId = newPlayers[0].id;
@@ -1576,6 +1670,15 @@ try{
       var parsed = JSON.parse($('backupText').value);
       if(!parsed || !Array.isArray(parsed.players)){ showToast('データ形式が正しくありません'); return; }
       if(!Array.isArray(parsed.logs)) parsed.logs = [];
+      if(parsed.currentSegment !== 'sp' && parsed.currentSegment !== 'fs'){ parsed.currentSegment = 'sp'; }
+      parsed.players.forEach(function(p){
+        if(typeof p.elements === 'string'){ p.elements = { sp: p.elements, fs:'' }; }
+        else if(!p.elements || typeof p.elements !== 'object'){ p.elements = { sp:'', fs:'' }; }
+        else{
+          if(typeof p.elements.sp !== 'string') p.elements.sp = '';
+          if(typeof p.elements.fs !== 'string') p.elements.fs = '';
+        }
+      });
       state = parsed;
       if(!state.currentPlayerId && state.players.length){ state.currentPlayerId = state.players[0].id; }
       saveState();
@@ -1648,13 +1751,5 @@ try{
 }
 })();
 </script>
-
-<footer style="text-align: center; font-size: 0.75rem; color: #888; margin-top: 3rem; padding: 1rem 0.5rem; line-height: 1.5;">
-  <p style="margin-bottom: 0.5rem;">【ご利用について】</p>
-  <p style="margin-bottom: 0.5rem;">本アプリは、使用される方の毎日を楽しく、快適にする目的で開発されたWEBアプリケーションです。</p>
-  <p style="margin-bottom: 0.5rem;">動作確認には万全を期しておりますが、端末環境やブラウザの仕様変更等に伴うデータ損失やトラブルについて開発者は一切の責任を負いかねます。</p>
-  <p>ご意見・不具合のご報告は X（<a href="https://x.com/lblt_labo" target="_blank" rel="noopener" style="color: #666; text-decoration: underline;">@lblt_labo</a>）までお願いいたします。</p>
-</footer>
-  
 </body>
 </html>
