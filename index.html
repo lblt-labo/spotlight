@@ -123,6 +123,13 @@
   .segment-toggle button[aria-pressed="true"]{
     background: var(--color-ice-blue-dark); border-color: var(--color-ice-blue-dark);
   }
+  .checkbox-row{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px; }
+  .checkbox-row label{
+    display:flex; align-items:center; gap:5px; background:var(--color-surface-alt);
+    border:1px solid var(--color-border-strong); border-radius:999px; padding:7px 12px;
+    font-size:0.78rem; font-weight:700; color:var(--color-text); cursor:pointer;
+  }
+  .checkbox-row input[type="checkbox"]{ width:18px; height:18px; margin:0; cursor:pointer; }
   .toggle-group button{
     padding:8px 12px; border-radius: 999px; border:1px solid var(--color-border-strong);
     background:#fff; color:var(--color-text); font-size:0.78rem; font-weight:700; cursor:pointer; min-height:40px;
@@ -359,8 +366,16 @@
         <button class="nav-arrow" id="btnNextPlayer" aria-label="次の選手">▶</button>
       </div>
       <div class="field-row">
+        <label for="inputPlayerOrder">滑走順</label>
+        <input type="number" id="inputPlayerOrder" placeholder="例: 3">
+      </div>
+      <div class="field-row">
         <label for="inputPlayerName">選手名</label>
         <input type="text" id="inputPlayerName" placeholder="例: 山田 花子">
+      </div>
+      <div class="field-row">
+        <label for="inputPlayerAffiliation">所属</label>
+        <input type="text" id="inputPlayerAffiliation" placeholder="例: ○○クラブ / ○○高">
       </div>
       <div class="field-row">
         <label for="inputPlayerSong">曲名 / プログラム</label>
@@ -393,6 +408,13 @@
 
     <section class="panel area-preview" id="panelPreview">
       <h2>実況プレビュー <span id="previewSegmentLabel" class="note-text" style="font-weight:800;"></span></h2>
+      <h3 style="margin-top:0;">ツイートに含める項目</h3>
+      <div class="checkbox-row" id="tweetFieldsToggle">
+        <label><input type="checkbox" data-field="order" checked> 滑走順</label>
+        <label><input type="checkbox" data-field="name" checked> 選手名</label>
+        <label><input type="checkbox" data-field="affiliation" checked> 所属</label>
+        <label><input type="checkbox" data-field="song" checked> 曲名</label>
+      </div>
       <textarea class="preview-textarea" id="previewTextarea" placeholder="ここに実況が表示されます。直接編集も可能です。"></textarea>
       <div class="counter-row">
         <span class="counter" id="charCounter">0 / 140文字</span>
@@ -434,7 +456,7 @@
     </section>
 
     <section class="panel area-score" id="panelScore">
-      <h2>得点入力</h2>
+      <h2>得点入力（キスクラ待機用）</h2>
       <div class="score-inputs">
         <div class="field-row">
           <label for="inputSP" id="labelSP">SP得点</label>
@@ -460,6 +482,10 @@
 
   </main>
 
+  <footer style="text-align: center; padding: 20px 10px; font-size: 0.8rem; color: #666; border-top: 1px solid #e0e0e0; margin-top: 30px;">
+    <p>免責事項: 本アプリの使用により生じた損害やトラブルについて、制作者は一切の責任を負いません。</p>
+    <p>連絡先: <a href="https://x.com/lblt_labo" target="_blank" rel="noopener noreferrer" style="color: #4a90e2; text-decoration: none;">@lblt_labo</a></p>
+  </footer>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -488,7 +514,7 @@
         <li>「↵ 改行」ボタンで本文に改行を一発挿入できます。</li>
         <li>右下の↩️ボタンで直前の操作を1つ取り消せます。</li>
         <li>「💾 ログに保存」で今の本文を履歴に保存し、📜ログ画面から後でコピーし直せます。</li>
-        <li>得点欄は演技後に入力する想定で、画面の一番下に配置されています。</li>
+        <li>得点欄はキスクラ待機中に入力する想定で、画面の一番下に配置されています。</li>
         <li>⚙️設定から選手リストや定型文、ハッシュタグ、カスタムボタンなどを自由に編集できます。</li>
       </ul>
     </div>
@@ -560,7 +586,7 @@
       <div id="playerListManage"></div>
       <button class="add-btn" id="btnAddPlayer">＋ 選手を追加</button>
       <h3 style="margin-top:14px;">一括インポート / エクスポート</h3>
-      <p class="note-text">1行1名で「選手名,曲名,SP予定構成,FS予定構成」の形式（曲名・予定構成は省略可）</p>
+      <p class="note-text">1行1名で「滑走順,選手名,所属,曲名,SP予定構成,FS予定構成」の形式（滑走順・所属・曲名・予定構成は省略可）</p>
       <textarea class="bulk-io" id="bulkPlayerText"></textarea>
       <div class="modal-btn-row">
         <button id="btnBulkExport">書き出す</button>
@@ -690,8 +716,8 @@ try{
       currentSegment: 'sp',
       event: { name:'', date:'', venue:'', seat:'', customHashtag:'', hashtagAuto: true },
       players: [
-        { id: genId(), name:'選手A', song:'', elements:{ sp:'', fs:'' } },
-        { id: genId(), name:'選手B', song:'', elements:{ sp:'', fs:'' } }
+        { id: genId(), order:'1', name:'選手A', affiliation:'', song:'', elements:{ sp:'', fs:'' } },
+        { id: genId(), order:'2', name:'選手B', affiliation:'', song:'', elements:{ sp:'', fs:'' } }
       ],
       currentPlayerId: null,
       honorific: 'san',
@@ -700,6 +726,7 @@ try{
       customButtons: [],
       scorePattern: '1',
       includeScoreInTweet: true,
+      tweetIncludeFields: { order:true, name:true, affiliation:true, song:true },
       vibrationEnabled: true,
       drafts: {},
       scores: {},
@@ -724,8 +751,17 @@ try{
       for(var k in base){ if(parsed[k] === undefined) parsed[k] = base[k]; }
       if(!Array.isArray(parsed.logs)) parsed.logs = [];
       if(parsed.currentSegment !== 'sp' && parsed.currentSegment !== 'fs'){ parsed.currentSegment = 'sp'; }
+      if(!parsed.tweetIncludeFields || typeof parsed.tweetIncludeFields !== 'object'){
+        parsed.tweetIncludeFields = { order:true, name:true, affiliation:true, song:true };
+      }else{
+        ['order','name','affiliation','song'].forEach(function(f){
+          if(typeof parsed.tweetIncludeFields[f] !== 'boolean') parsed.tweetIncludeFields[f] = true;
+        });
+      }
       if(Array.isArray(parsed.players)){
         parsed.players.forEach(function(p){
+          if(typeof p.order !== 'string' && typeof p.order !== 'number'){ p.order = ''; }
+          if(typeof p.affiliation !== 'string'){ p.affiliation = ''; }
           if(typeof p.elements === 'string'){
             p.elements = { sp: p.elements, fs: '' };
           }else if(!p.elements || typeof p.elements !== 'object'){
@@ -795,13 +831,16 @@ try{
   var elDisciplineTabs = $('disciplineTabs');
   var elEventTagRow = $('eventTagRow');
   var elSelectPlayer = $('selectPlayer');
+  var elInputPlayerOrder = $('inputPlayerOrder');
   var elInputPlayerName = $('inputPlayerName');
+  var elInputPlayerAffiliation = $('inputPlayerAffiliation');
   var elInputPlayerSong = $('inputPlayerSong');
   var elInputPlayerElements = $('inputPlayerElements');
   var elLabelPlayerElements = $('labelPlayerElements');
   var elSegmentToggle = $('segmentToggle');
   var elPreviewSegmentLabel = $('previewSegmentLabel');
   var elSavedSpNote = $('savedSpNote');
+  var elTweetFieldsToggle = $('tweetFieldsToggle');
   var elHonorificToggle = $('honorificToggle');
   var elSeparatorToggle = $('separatorToggle');
   var elPreviewTextarea = $('previewTextarea');
@@ -942,9 +981,34 @@ try{
     return (state.event.customHashtag || '').trim();
   }
 
+  function buildMetaLines(){
+    var lines = [];
+    var p = getCurrentPlayer();
+    if(!p) return lines;
+    var f = state.tweetIncludeFields;
+    var headerLine = '';
+    if(f.order && p.order !== undefined && p.order !== null && String(p.order).length > 0){
+      headerLine += '#' + p.order + ' ';
+    }
+    if(f.name && p.name){
+      headerLine += p.name;
+    }
+    if(f.affiliation && p.affiliation){
+      headerLine += '（' + p.affiliation + '）';
+    }
+    headerLine = headerLine.trim();
+    if(headerLine) lines.push(headerLine);
+    if(f.song && p.song){
+      lines.push(p.song);
+    }
+    return lines;
+  }
+
   function buildFinalText(){
+    var metaLines = buildMetaLines();
     var body = getCurrentDraft().text;
-    var parts = [body];
+    var parts = metaLines.slice();
+    if(body) parts.push(body);
     if(state.includeScoreInTweet){
       var scoreLine = buildScoreLine();
       if(scoreLine) parts.push(scoreLine);
@@ -963,13 +1027,15 @@ try{
     elCharCounter.classList.toggle('warn', len > 120);
 
     var appended = [];
+    var metaLines = buildMetaLines();
+    if(metaLines.length) appended.push('先頭: ' + metaLines.join(' ／ '));
     if(state.includeScoreInTweet){
       var s = buildScoreLine();
       if(s) appended.push('得点: ' + s);
     }
     var h = buildHashtagLine();
     if(h) appended.push('ハッシュタグ: ' + h);
-    elAppendPreview.textContent = appended.length ? ('末尾に自動追加される内容 → ' + appended.join(' / ')) : '末尾に自動追加される内容: なし';
+    elAppendPreview.textContent = appended.length ? ('自動的に追加される内容 → ' + appended.join(' / ')) : '自動的に追加される内容: なし';
 
     renderTotalDisplay();
   }
@@ -1019,7 +1085,9 @@ try{
   function renderPlayerFields(){
     var p = getCurrentPlayer();
     if(!p) return;
+    elInputPlayerOrder.value = (p.order !== undefined && p.order !== null) ? p.order : '';
     elInputPlayerName.value = p.name || '';
+    elInputPlayerAffiliation.value = p.affiliation || '';
     elInputPlayerSong.value = p.song || '';
     elInputPlayerElements.value = p.elements[state.currentSegment] || '';
   }
@@ -1136,6 +1204,14 @@ try{
   /* ============================================================
      全体再描画
   ============================================================ */
+  function renderTweetFieldsToggle(){
+    var boxes = elTweetFieldsToggle.querySelectorAll('input[type="checkbox"][data-field]');
+    boxes.forEach(function(cb){
+      var field = cb.getAttribute('data-field');
+      cb.checked = !!state.tweetIncludeFields[field];
+    });
+  }
+
   function renderAll(){
     renderEventTags();
     renderPlayerSelect();
@@ -1143,6 +1219,7 @@ try{
     renderToggleGroup(elHonorificToggle, state.honorific);
     renderToggleGroup(elSeparatorToggle, state.separator);
     renderSegmentLabels();
+    renderTweetFieldsToggle();
     renderTouchGroups();
     renderComboRow();
     renderCustomButtons();
@@ -1220,19 +1297,39 @@ try{
     vibrate(10);
   });
 
+  elInputPlayerOrder.addEventListener('input', function(){
+    var p = getCurrentPlayer(); if(!p) return;
+    p.order = elInputPlayerOrder.value;
+    saveState(); renderPreview();
+  });
   elInputPlayerName.addEventListener('input', function(){
     var p = getCurrentPlayer(); if(!p) return;
     p.name = elInputPlayerName.value;
     saveState(); renderPlayerSelect();
     elSelectPlayer.value = state.currentPlayerId;
+    renderPreview();
+  });
+  elInputPlayerAffiliation.addEventListener('input', function(){
+    var p = getCurrentPlayer(); if(!p) return;
+    p.affiliation = elInputPlayerAffiliation.value;
+    saveState(); renderPreview();
   });
   elInputPlayerSong.addEventListener('input', function(){
     var p = getCurrentPlayer(); if(!p) return;
     p.song = elInputPlayerSong.value; saveState();
+    renderPreview();
   });
   elInputPlayerElements.addEventListener('input', function(){
     var p = getCurrentPlayer(); if(!p) return;
     p.elements[state.currentSegment] = elInputPlayerElements.value; saveState();
+  });
+
+  elTweetFieldsToggle.addEventListener('change', function(e){
+    var cb = e.target.closest('input[type="checkbox"][data-field]'); if(!cb) return;
+    var field = cb.getAttribute('data-field');
+    state.tweetIncludeFields[field] = cb.checked;
+    saveState();
+    renderPreview();
   });
 
   elHonorificToggle.addEventListener('click', function(e){
@@ -1537,8 +1634,10 @@ try{
     var container = $('playerListManage');
     container.innerHTML = state.players.map(function(p){
       return '<div class="player-list-item" data-pid="' + p.id + '">' +
-        '<div class="row"><input type="text" data-field="name" value="' + escapeAttr(p.name) + '" placeholder="選手名">' +
+        '<div class="row"><input type="number" data-field="order" value="' + escapeAttr(p.order) + '" placeholder="滑走順" style="flex:0 0 90px;">' +
+        '<input type="text" data-field="name" value="' + escapeAttr(p.name) + '" placeholder="選手名">' +
         '<button class="icon-btn danger" data-action="delete-player">🗑</button></div>' +
+        '<div class="row"><input type="text" data-field="affiliation" value="' + escapeAttr(p.affiliation) + '" placeholder="所属（例: ○○クラブ）"></div>' +
         '<div class="row"><input type="text" data-field="song" value="' + escapeAttr(p.song) + '" placeholder="曲名/プログラム"></div>' +
         '<div class="row"><input type="text" data-field="elementsSp" value="' + escapeAttr(p.elements.sp) + '" placeholder="SP予定構成"></div>' +
         '<div class="row"><input type="text" data-field="elementsFs" value="' + escapeAttr(p.elements.fs) + '" placeholder="FS予定構成"></div>' +
@@ -1557,7 +1656,7 @@ try{
     else if(field === 'elementsFs'){ p.elements.fs = e.target.value; }
     else{ p[field] = e.target.value; }
     saveState();
-    if(pid === state.currentPlayerId){ renderPlayerFields(); renderPlayerSelect(); }
+    if(pid === state.currentPlayerId){ renderPlayerFields(); renderPlayerSelect(); renderPreview(); }
   });
   $('playerListManage').addEventListener('click', function(e){
     var btn = e.target.closest('button[data-action="delete-player"]'); if(!btn) return;
@@ -1571,7 +1670,7 @@ try{
     renderAll();
   });
   $('btnAddPlayer').addEventListener('click', function(){
-    var np = { id: genId(), name:'新しい選手', song:'', elements:{ sp:'', fs:'' } };
+    var np = { id: genId(), order:'', name:'新しい選手', affiliation:'', song:'', elements:{ sp:'', fs:'' } };
     state.players.push(np);
     saveState();
     renderPlayerListManage();
@@ -1580,7 +1679,7 @@ try{
 
   $('btnBulkExport').addEventListener('click', function(){
     var lines = state.players.map(function(p){
-      return [p.name||'', p.song||'', p.elements.sp||'', p.elements.fs||''].join(',');
+      return [p.order||'', p.name||'', p.affiliation||'', p.song||'', p.elements.sp||'', p.elements.fs||''].join(',');
     });
     $('bulkPlayerText').value = lines.join('\n');
     showToast('書き出しました');
@@ -1591,7 +1690,14 @@ try{
     if(lines.length === 0){ showToast('取り込むデータがありません'); return; }
     var newPlayers = lines.map(function(l){
       var parts = l.split(',');
-      return { id: genId(), name: (parts[0]||'').trim(), song:(parts[1]||'').trim(), elements:{ sp:(parts[2]||'').trim(), fs:(parts[3]||'').trim() } };
+      return {
+        id: genId(),
+        order: (parts[0]||'').trim(),
+        name: (parts[1]||'').trim(),
+        affiliation: (parts[2]||'').trim(),
+        song: (parts[3]||'').trim(),
+        elements:{ sp:(parts[4]||'').trim(), fs:(parts[5]||'').trim() }
+      };
     });
     state.players = newPlayers;
     state.currentPlayerId = newPlayers[0].id;
@@ -1747,13 +1853,5 @@ try{
 }
 })();
 </script>
-
-  <footer style="text-align: center; font-size: 0.75rem; color: #888; margin-top: 3rem; padding: 1rem 0.5rem; line-height: 1.5;">
-  <p style="margin-bottom: 0.5rem;">【ご利用について】</p>
-  <p style="margin-bottom: 0.5rem;">本アプリは、使用される方の毎日を楽しく、快適にする目的で開発されたWEBアプリケーションです。</p>
-  <p style="margin-bottom: 0.5rem;">動作確認には万全を期しておりますが、端末環境やブラウザの仕様変更等に伴うデータ損失やトラブルについて開発者は一切の責任を負いかねます。</p>
-  <p>ご意見・不具合のご報告は X（<a href="https://x.com/lblt_labo" target="_blank" rel="noopener" style="color: #666; text-decoration: underline;">@lblt_labo</a>）までお願いいたします。</p>
-</footer>
-  
 </body>
 </html>
